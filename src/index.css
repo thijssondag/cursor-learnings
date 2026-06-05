@@ -1,0 +1,44 @@
+@import 'tailwindcss';
+
+/* Design tokens — see Design/DESIGN.md (ElevenLabs "eggshell" reference) */
+@theme {
+  --color-eggshell: #fdfcfc;
+  --color-powder: #f5f3f1;
+  --color-chalk: #e5e5e5;
+  --color-fog: #b1b0b0;
+  --color-gravel: #777169;
+  --color-slate: #a59f97;
+  --color-obsidian: #000000;
+  --color-ember: #ff4704;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+
+  --radius-card: 16px;
+  --radius-pill: 9999px;
+
+  --shadow-hairline: 0 0 1px 0 rgba(0, 0, 0, 0.4), 0 2px 4px 0 rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 0 1px 0 rgba(0, 0, 0, 0.4), 0 4px 12px 0 rgba(0, 0, 0, 0.06);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background-color: var(--color-eggshell);
+  color: var(--color-obsidian);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Prevent iOS pull-to-refresh / overscroll fighting the canvas */
+  overscroll-behavior: none;
+}
+
+/* Make tldraw's canvas blend with the eggshell ground */
+.tl-background {
+  background-color: var(--color-eggshell) !important;
+}
