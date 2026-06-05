@@ -31,6 +31,17 @@ Initial version (by Thijs / agent).
 - Identity is browser-local and unauthenticated; ownership is best-effort (acceptable for a trusted workshop).
 - tldraw shows a small watermark without a license key.
 
+## [0.1.2] — 2026-06-05
+
+Multiplayer cursor reliability and mockup-accurate rendering (by Thijs / agent).
+
+### Changed
+
+- **Presence:** Shared `PresenceContext` replaces duplicate `useQuery(api.presence.list)` subscriptions.
+- **Cursor broadcast:** `useCursorBroadcast` tracks pointer on the tldraw container via `screenToPage`, syncs tldraw user prefs, and disconnects on `pagehide` / `visibilitychange`.
+- **Remote cursors:** Custom `RemoteCursors` overlay (SVG arrow + pastel name pill with dark text) replaces tldraw `InstancePresenceRecordType` injection; positions stay correct while panning/zooming.
+- **Backend:** `presence.heartbeat` skips full row patches when position/name/color are unchanged (still updates `lastSeen` on keepalive).
+
 ## [0.1.1] — 2026-06-05
 
 UX improvements (by Thijs / agent).

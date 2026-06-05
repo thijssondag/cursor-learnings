@@ -18,11 +18,20 @@ export const heartbeat = mutation({
       .withIndex('by_session', (q) => q.eq('sessionId', args.sessionId))
       .unique()
 
-    const data = { ...args, lastSeen: Date.now() }
+    const lastSeen = Date.now()
     if (existing) {
-      await ctx.db.patch(existing._id, data)
+      const positionUnchanged =
+        existing.x === args.x &&
+        existing.y === args.y &&
+        existing.name === args.name &&
+        existing.color === args.color
+      if (positionUnchanged) {
+        await ctx.db.patch(existing._id, { lastSeen })
+      } else {
+        await ctx.db.patch(existing._id, { ...args, lastSeen })
+      }
     } else {
-      await ctx.db.insert('presence', data)
+      await ctx.db.insert('presence', { ...args, lastSeen })
     }
   },
 })

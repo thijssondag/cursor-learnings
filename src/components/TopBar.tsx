@@ -1,10 +1,7 @@
-export function TopBar({
-  onAddNote,
-  onlineCount,
-}: {
-  onAddNote: () => void
-  onlineCount: number
-}) {
+import { usePresenceContext } from '../context/PresenceContext'
+
+export function TopBar({ onAddNote }: { onAddNote: () => void }) {
+  const { onlineCount } = usePresenceContext()
   return (
     <div
       style={{

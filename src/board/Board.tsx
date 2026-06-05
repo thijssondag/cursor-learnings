@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import { Tldraw, type Editor, type TLComponents } from 'tldraw'
 import 'tldraw/tldraw.css'
-import { useMutation, useQuery } from 'convex/react'
+import { useMutation } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { IdentityProvider } from '../context/IdentityContext'
+import { PresenceProvider } from '../context/PresenceContext'
 import type { Identity } from '../lib/identity'
 import { NOTE_HEIGHT, NOTE_WIDTH, randomTilt } from '../lib/constants'
 import { NoteShapeUtil } from './NoteShapeUtil'
 import { useSyncNotes } from './useSyncNotes'
-import { usePresence } from './usePresence'
+import { useCursorBroadcast } from './usePresence'
 import { TopBar } from '../components/TopBar'
+import { RemoteCursors } from '../components/RemoteCursors'
 
 const shapeUtils = [NoteShapeUtil]
 
@@ -33,15 +35,18 @@ export function Board({ identity }: { identity: Identity }) {
 
   return (
     <IdentityProvider identity={identity}>
-      <div style={{ position: 'fixed', inset: 0 }}>
-        <Tldraw
-          shapeUtils={shapeUtils}
-          components={components}
-          onMount={(e) => setEditor(e)}
-        >
-          <BoardInner editor={editor} identity={identity} />
-        </Tldraw>
-      </div>
+      <PresenceProvider identity={identity}>
+        <div style={{ position: 'fixed', inset: 0 }}>
+          <Tldraw
+            shapeUtils={shapeUtils}
+            components={components}
+            onMount={(e) => setEditor(e)}
+          >
+            <BoardInner editor={editor} identity={identity} />
+          </Tldraw>
+          {editor && <RemoteCursors editor={editor} />}
+        </div>
+      </PresenceProvider>
     </IdentityProvider>
   )
 }
@@ -54,11 +59,9 @@ function BoardInner({
   identity: Identity
 }) {
   useSyncNotes(editor, identity)
-  usePresence(editor, identity)
+  useCursorBroadcast(editor, identity)
 
   const createNote = useMutation(api.notes.create)
-  const presence = useQuery(api.presence.list)
-  const onlineCount = presence?.length ?? 1
 
   const handleAddNote = () => {
     if (!editor) return
@@ -74,5 +77,5 @@ function BoardInner({
     })
   }
 
-  return <TopBar onAddNote={handleAddNote} onlineCount={onlineCount} />
+  return <TopBar onAddNote={handleAddNote} />
 }

@@ -1,89 +1,84 @@
 import { useEffect, useRef } from 'react'
-import { useMutation, useQuery } from 'convex/react'
-import { InstancePresenceRecordType, type Editor, type TLRecord } from 'tldraw'
+import { useMutation } from 'convex/react'
+import type { Editor } from 'tldraw'
 import { api } from '../../convex/_generated/api'
 import type { Identity } from '../lib/identity'
 import { throttle } from '../lib/throttle'
 
+const HEARTBEAT_MS = 4000
+const THROTTLE_MS = 70
+
 /**
- * Streams the local cursor to Convex and renders other people's cursors by
- * injecting tldraw `instance_presence` records into the store.
+ * Streams the local cursor position to Convex (throttled) with keepalive
+ * and reliable disconnect on tab close / background.
  */
-export function usePresence(editor: Editor | null, identity: Identity) {
-  const others = useQuery(api.presence.list)
+export function useCursorBroadcast(editor: Editor | null, identity: Identity) {
   const heartbeat = useMutation(api.presence.heartbeat)
   const leave = useMutation(api.presence.leave)
+  const lastSentRef = useRef({ x: NaN, y: NaN })
+  const lastPointRef = useRef({ x: 0, y: 0 })
 
-  // Send local cursor position (throttled) + a keepalive so we don't go stale.
   useEffect(() => {
     if (!editor) return
 
-    const send = throttle(() => {
-      const p = editor.inputs.currentPagePoint
+    editor.user.updateUserPreferences({
+      id: identity.sessionId,
+      name: identity.name,
+      color: identity.color,
+    })
+
+    const container = editor.getContainer()
+
+    const send = (force = false) => {
+      const { x, y } = lastPointRef.current
+      if (!force && lastSentRef.current.x === x && lastSentRef.current.y === y) {
+        return
+      }
+      lastSentRef.current = { x, y }
       void heartbeat({
         sessionId: identity.sessionId,
         name: identity.name,
         color: identity.color,
-        x: p.x,
-        y: p.y,
+        x,
+        y,
       })
-    }, 70)
+    }
 
-    const onMove = () => send()
-    window.addEventListener('pointermove', onMove)
-    const keepalive = setInterval(() => send(), 4000)
-    send()
+    const sendThrottled = throttle(() => send(false), THROTTLE_MS)
 
-    const onUnload = () => {
+    const onPointerMove = (e: PointerEvent) => {
+      const pagePoint = editor.screenToPage({ x: e.clientX, y: e.clientY })
+      lastPointRef.current = { x: pagePoint.x, y: pagePoint.y }
+      sendThrottled()
+    }
+
+    const onPageHide = () => {
       void leave({ sessionId: identity.sessionId })
     }
-    window.addEventListener('beforeunload', onUnload)
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        void leave({ sessionId: identity.sessionId })
+      } else {
+        send(true)
+      }
+    }
+
+    container.addEventListener('pointermove', onPointerMove)
+    window.addEventListener('pagehide', onPageHide)
+    window.addEventListener('beforeunload', onPageHide)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    const keepalive = setInterval(() => send(true), HEARTBEAT_MS)
+    send(true)
 
     return () => {
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('beforeunload', onUnload)
+      container.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pagehide', onPageHide)
+      window.removeEventListener('beforeunload', onPageHide)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       clearInterval(keepalive)
       void leave({ sessionId: identity.sessionId })
     }
   }, [editor, identity, heartbeat, leave])
-
-  // Render remote cursors.
-  const appliedIdsRef = useRef<Set<string>>(new Set())
-  useEffect(() => {
-    if (!editor || !others) return
-
-    const pageId = editor.getCurrentPageId()
-    const nextIds = new Set<string>()
-    const records: TLRecord[] = []
-
-    for (const o of others) {
-      if (o.sessionId === identity.sessionId) continue
-      const id = InstancePresenceRecordType.createId(o.sessionId)
-      nextIds.add(id)
-      records.push(
-        InstancePresenceRecordType.create({
-          id,
-          currentPageId: pageId,
-          userId: o.sessionId,
-          userName: o.name,
-          color: o.color,
-          cursor: { x: o.x, y: o.y, type: 'default', rotation: 0 },
-          lastActivityTimestamp: Date.now(),
-        }),
-      )
-    }
-
-    const toRemove = [...appliedIdsRef.current].filter((id) => !nextIds.has(id))
-
-    editor.store.mergeRemoteChanges(() => {
-      if (records.length > 0) editor.store.put(records)
-      if (toRemove.length > 0) {
-        editor.store.remove(
-          toRemove as Parameters<typeof editor.store.remove>[0],
-        )
-      }
-    })
-
-    appliedIdsRef.current = nextIds
-  }, [editor, others, identity.sessionId])
 }
