@@ -1,8 +1,20 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
+import type { MutationCtx, QueryCtx } from './_generated/server'
 
-// Returns notes on a page plus heart count and whether the requesting session liked it.
+async function profileFieldsForAuthor(ctx: QueryCtx | MutationCtx, sessionId: string) {
+  const profile = await ctx.db
+    .query('profiles')
+    .withIndex('by_session', (q) => q.eq('sessionId', sessionId))
+    .unique()
+  return {
+    authorXHandle: profile?.xHandle ?? '',
+    authorLinkedInUrl: profile?.linkedInUrl ?? '',
+  }
+}
+
+// Returns notes on a page — 2 indexed reads (notes by page + hearts by session).
 export const list = query({
   args: { sessionId: v.string(), pageId: v.id('pages') },
   handler: async (ctx, { sessionId, pageId }) => {
@@ -11,30 +23,21 @@ export const list = query({
       .withIndex('by_page', (q) => q.eq('pageId', pageId))
       .collect()
 
-    return Promise.all(
-      notes.map(async (note) => {
-        const hearts = await ctx.db
-          .query('hearts')
-          .withIndex('by_note', (q) => q.eq('noteId', note._id))
-          .collect()
+    const myHearts = await ctx.db
+      .query('hearts')
+      .withIndex('by_session', (q) => q.eq('sessionId', sessionId))
+      .collect()
 
-        const profile = await ctx.db
-          .query('profiles')
-          .withIndex('by_session', (q) =>
-            q.eq('sessionId', note.authorSessionId),
-          )
-          .unique()
+    const likedNoteIds = new Set(myHearts.map((h) => h.noteId))
 
-        return {
-          ...note,
-          heartCount: hearts.length,
-          likedByMe: hearts.some((h) => h.sessionId === sessionId),
-          isOwner: note.authorSessionId === sessionId,
-          authorXHandle: profile?.xHandle ?? '',
-          authorLinkedInUrl: profile?.linkedInUrl ?? '',
-        }
-      }),
-    )
+    return notes.map((note) => ({
+      ...note,
+      heartCount: note.heartCount ?? 0,
+      likedByMe: likedNoteIds.has(note._id),
+      isOwner: note.authorSessionId === sessionId,
+      authorXHandle: note.authorXHandle ?? '',
+      authorLinkedInUrl: note.authorLinkedInUrl ?? '',
+    }))
   },
 })
 
@@ -52,15 +55,18 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const authorName = args.authorName.trim()
     if (!authorName) throw new Error('Name is required to create a note')
+    const profileFields = await profileFieldsForAuthor(ctx, args.sessionId)
     return ctx.db.insert('notes', {
       pageId: args.pageId,
       authorSessionId: args.sessionId,
       authorName,
+      ...profileFields,
       text: args.text,
       x: args.x,
       y: args.y,
       rotation: args.rotation,
       color: args.color,
+      heartCount: 0,
       createdAt: Date.now(),
     })
   },
@@ -105,13 +111,11 @@ export const remove = mutation({
 })
 
 async function requireOwnedNote(
-  ctx: { db: { get: (id: Id<'notes'>) => Promise<unknown> } },
+  ctx: MutationCtx,
   noteId: Id<'notes'>,
   sessionId: string,
 ) {
-  const note = (await ctx.db.get(noteId)) as
-    | { _id: Id<'notes'>; authorSessionId: string }
-    | null
+  const note = await ctx.db.get(noteId)
   if (!note) throw new Error('Note not found')
   if (note.authorSessionId !== sessionId) {
     throw new Error('You can only edit your own notes')

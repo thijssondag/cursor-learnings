@@ -29,7 +29,7 @@ export function PresenceProvider({
   children: React.ReactNode
 }) {
   const raw = useQuery(api.presence.list)
-  const onlineUsers = raw ?? []
+  const onlineUsers = useMemo(() => raw ?? [], [raw])
 
   const remoteUsers = useMemo(
     () => onlineUsers.filter((u) => u.sessionId !== identity.sessionId),

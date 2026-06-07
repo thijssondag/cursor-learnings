@@ -1,9 +1,71 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+import type { MutationCtx } from './_generated/server'
 
-// Cursors older than this are considered offline.
 const STALE_MS = 30_000
 
+async function upsertPresence(
+  ctx: MutationCtx,
+  args: { sessionId: string; name: string; color: string; x: number; y: number },
+  patch: Record<string, unknown>,
+) {
+  const existing = await ctx.db
+    .query('presence')
+    .withIndex('by_session', (q) => q.eq('sessionId', args.sessionId))
+    .unique()
+
+  if (existing) {
+    await ctx.db.patch(existing._id, patch)
+    return
+  }
+
+  await ctx.db.insert('presence', {
+    ...args,
+    lastSeen: Date.now(),
+    ...patch,
+  })
+}
+
+// Cursor position only — does not bump lastSeen (reduces subscription churn).
+export const updateCursor = mutation({
+  args: {
+    sessionId: v.string(),
+    name: v.string(),
+    color: v.string(),
+    x: v.number(),
+    y: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await upsertPresence(ctx, args, {
+      name: args.name,
+      color: args.color,
+      x: args.x,
+      y: args.y,
+    })
+  },
+})
+
+// Liveness ping — bumps lastSeen so the user stays "online".
+export const touch = mutation({
+  args: {
+    sessionId: v.string(),
+    name: v.string(),
+    color: v.string(),
+    x: v.number(),
+    y: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await upsertPresence(ctx, args, {
+      name: args.name,
+      color: args.color,
+      x: args.x,
+      y: args.y,
+      lastSeen: Date.now(),
+    })
+  },
+})
+
+/** @deprecated Use updateCursor + touch instead. */
 export const heartbeat = mutation({
   args: {
     sessionId: v.string(),
@@ -13,26 +75,10 @@ export const heartbeat = mutation({
     y: v.number(),
   },
   handler: async (ctx, args) => {
-    const existing = await ctx.db
-      .query('presence')
-      .withIndex('by_session', (q) => q.eq('sessionId', args.sessionId))
-      .unique()
-
-    const lastSeen = Date.now()
-    if (existing) {
-      const positionUnchanged =
-        existing.x === args.x &&
-        existing.y === args.y &&
-        existing.name === args.name &&
-        existing.color === args.color
-      if (positionUnchanged) {
-        await ctx.db.patch(existing._id, { lastSeen })
-      } else {
-        await ctx.db.patch(existing._id, { ...args, lastSeen })
-      }
-    } else {
-      await ctx.db.insert('presence', { ...args, lastSeen })
-    }
+    await upsertPresence(ctx, args, {
+      ...args,
+      lastSeen: Date.now(),
+    })
   },
 })
 
@@ -40,8 +86,10 @@ export const list = query({
   args: {},
   handler: async (ctx) => {
     const cutoff = Date.now() - STALE_MS
-    const all = await ctx.db.query('presence').collect()
-    return all.filter((p) => p.lastSeen >= cutoff)
+    return ctx.db
+      .query('presence')
+      .withIndex('by_lastSeen', (q) => q.gte('lastSeen', cutoff))
+      .collect()
   },
 })
 

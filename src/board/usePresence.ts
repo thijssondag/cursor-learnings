@@ -5,15 +5,16 @@ import { api } from '../../convex/_generated/api'
 import type { Identity } from '../lib/identity'
 import { throttle } from '../lib/throttle'
 
-const HEARTBEAT_MS = 4000
-const THROTTLE_MS = 70
+const KEEPALIVE_MS = 4000
+const CURSOR_THROTTLE_MS = 150
 
 /**
- * Streams the local cursor position to Convex (throttled) with keepalive
- * and reliable disconnect on tab close only (keepalive maintains long sessions).
+ * Streams cursor position (throttled, no lastSeen bump) and keepalive touches
+ * so presence.list stays accurate without excessive write contention.
  */
 export function useCursorBroadcast(editor: Editor | null, identity: Identity) {
-  const heartbeat = useMutation(api.presence.heartbeat)
+  const updateCursor = useMutation(api.presence.updateCursor)
+  const touch = useMutation(api.presence.touch)
   const leave = useMutation(api.presence.leave)
   const lastSentRef = useRef({ x: NaN, y: NaN })
   const lastPointRef = useRef({ x: 0, y: 0 })
@@ -29,27 +30,31 @@ export function useCursorBroadcast(editor: Editor | null, identity: Identity) {
 
     const container = editor.getContainer()
 
-    const send = (force = false) => {
+    const payload = () => ({
+      sessionId: identity.sessionId,
+      name: identity.name,
+      color: identity.color,
+      x: lastPointRef.current.x,
+      y: lastPointRef.current.y,
+    })
+
+    const sendPosition = () => {
       const { x, y } = lastPointRef.current
-      if (!force && lastSentRef.current.x === x && lastSentRef.current.y === y) {
-        return
-      }
+      if (lastSentRef.current.x === x && lastSentRef.current.y === y) return
       lastSentRef.current = { x, y }
-      void heartbeat({
-        sessionId: identity.sessionId,
-        name: identity.name,
-        color: identity.color,
-        x,
-        y,
-      })
+      void updateCursor(payload())
     }
 
-    const sendThrottled = throttle(() => send(false), THROTTLE_MS)
+    const sendKeepalive = () => {
+      void touch(payload())
+    }
+
+    const sendPositionThrottled = throttle(sendPosition, CURSOR_THROTTLE_MS)
 
     const onPointerMove = (e: PointerEvent) => {
       const pagePoint = editor.screenToPage({ x: e.clientX, y: e.clientY })
       lastPointRef.current = { x: pagePoint.x, y: pagePoint.y }
-      sendThrottled()
+      sendPositionThrottled()
     }
 
     const onPageHide = () => {
@@ -60,8 +65,8 @@ export function useCursorBroadcast(editor: Editor | null, identity: Identity) {
     window.addEventListener('pagehide', onPageHide)
     window.addEventListener('beforeunload', onPageHide)
 
-    const keepalive = setInterval(() => send(true), HEARTBEAT_MS)
-    send(true)
+    const keepalive = setInterval(sendKeepalive, KEEPALIVE_MS)
+    sendKeepalive()
 
     return () => {
       container.removeEventListener('pointermove', onPointerMove)
@@ -70,5 +75,5 @@ export function useCursorBroadcast(editor: Editor | null, identity: Identity) {
       clearInterval(keepalive)
       void leave({ sessionId: identity.sessionId })
     }
-  }, [editor, identity, heartbeat, leave])
+  }, [editor, identity, updateCursor, touch, leave])
 }

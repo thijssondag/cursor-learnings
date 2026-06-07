@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import type { Editor } from 'tldraw'
 import { createShapeId } from 'tldraw'
@@ -12,7 +12,6 @@ import {
   isNoteDragging,
   setNoteDragging,
 } from '../lib/editingState'
-import { throttle } from '../lib/throttle'
 import type { NoteShape } from './NoteShapeUtil'
 
 type ConvexNote = {
@@ -42,18 +41,7 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
 
   const notesByIdRef = useRef<Map<string, ConvexNote>>(new Map())
   const isApplyingRemoteRef = useRef(false)
-
-  const persistMove = useMemo(
-    () =>
-      throttle((id: string, x: number, y: number) => {
-        void moveNote({
-          noteId: id as Id<'notes'>,
-          x,
-          y,
-        })
-      }, 200),
-    [moveNote],
-  )
+  const pendingMoveRef = useRef(new Map<string, { x: number; y: number }>())
 
   useEffect(() => {
     if (!editor || !notes) return
@@ -138,6 +126,8 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
   useEffect(() => {
     if (!editor) return
 
+    const pendingMoves = pendingMoveRef.current
+
     const dispose = editor.store.listen(
       (entry) => {
         for (const record of Object.values(entry.changes.updated)) {
@@ -149,16 +139,30 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
 
           if (shape.x !== note.x || shape.y !== note.y) {
             setNoteDragging(shape.props.noteId, true)
-            persistMove(shape.props.noteId, shape.x, shape.y)
+            pendingMoves.set(shape.props.noteId, {
+              x: shape.x,
+              y: shape.y,
+            })
           }
         }
       },
       { source: 'user', scope: 'document' },
     )
 
-    const clearOnPointerUp = () => clearDraggingNotes()
-    window.addEventListener('pointerup', clearOnPointerUp)
-    window.addEventListener('pointercancel', clearOnPointerUp)
+    const flushPendingMoves = () => {
+      for (const [noteId, { x, y }] of pendingMoves) {
+        void moveNote({
+          noteId: noteId as Id<'notes'>,
+          x,
+          y,
+        })
+      }
+      pendingMoves.clear()
+      clearDraggingNotes()
+    }
+
+    window.addEventListener('pointerup', flushPendingMoves)
+    window.addEventListener('pointercancel', flushPendingMoves)
 
     const disposeDelete = editor.sideEffects.registerBeforeDeleteHandler(
       'shape',
@@ -170,12 +174,13 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
 
     return () => {
       dispose()
-      window.removeEventListener('pointerup', clearOnPointerUp)
-      window.removeEventListener('pointercancel', clearOnPointerUp)
+      window.removeEventListener('pointerup', flushPendingMoves)
+      window.removeEventListener('pointercancel', flushPendingMoves)
       disposeDelete()
+      pendingMoves.clear()
       clearDraggingNotes()
     }
-  }, [editor, persistMove])
+  }, [editor, moveNote])
 
   return notes
 }

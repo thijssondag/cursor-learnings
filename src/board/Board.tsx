@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import {
   Tldraw,
-  SelectTool,
-  DrawShapeTool,
   DefaultSizeStyle,
   type Editor,
   type TLComponents,
@@ -15,6 +13,7 @@ import { IdentityProvider } from '../context/IdentityContext'
 import { PresenceProvider } from '../context/PresenceContext'
 import { DeleteProvider } from '../context/DeleteContext'
 import { PageProvider, usePageContext } from '../context/PageContext'
+import { BoardActionsProvider } from '../context/BoardActionsContext'
 import type { Identity } from '../lib/identity'
 import { NOTE_HEIGHT, NOTE_WIDTH, randomTilt } from '../lib/constants'
 import {
@@ -25,8 +24,10 @@ import {
 import { updateIdentity } from '../lib/identity'
 import { NoteShapeUtil } from './NoteShapeUtil'
 import { useSyncNotes } from './useSyncNotes'
-import { useSyncDrawings } from './useSyncDrawings'
+import { deleteLocalCanvasShapes, useSyncCanvasShapes } from './useSyncCanvasShapes'
 import { useCursorBroadcast } from './usePresence'
+import { BoardToolbar } from './BoardToolbar'
+import { boardUiOverrides } from './boardUiOverrides'
 import { TopBar } from '../components/TopBar'
 import { RemoteCursors } from '../components/RemoteCursors'
 import { CursorBoardBackground } from '../components/CursorBoardBackground'
@@ -34,11 +35,12 @@ import { ProfileModal } from '../components/ProfileModal'
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal'
 
 const shapeUtils = [NoteShapeUtil]
-const boardTools = [SelectTool, DrawShapeTool]
 
-// Minimal tldraw UI: toolbar (select + draw + color) and navigation (zoom).
+const BLOCKED_SHAPE_TYPES = new Set(['image', 'video', 'note', 'bookmark', 'embed'])
+
 const components: TLComponents = {
   Background: CursorBoardBackground,
+  Toolbar: BoardToolbar,
   MainMenu: null,
   PageMenu: null,
   MenuPanel: null,
@@ -54,6 +56,13 @@ const components: TLComponents = {
 
 function configureEditor(editor: Editor) {
   editor.setStyleForNextShapes(DefaultSizeStyle, 'm')
+
+  editor.sideEffects.registerAfterCreateHandler('shape', (shape, source) => {
+    if (source !== 'user') return
+    if (BLOCKED_SHAPE_TYPES.has(shape.type)) {
+      editor.deleteShape(shape.id)
+    }
+  })
 }
 
 export function Board({
@@ -120,22 +129,12 @@ export function Board({
                 pointerEvents: overlayOpen ? 'none' : undefined,
               }}
             >
-              <Tldraw
-                licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY}
-                shapeUtils={shapeUtils}
-                tools={boardTools}
-                components={components}
-                onMount={(e) => {
-                  configureEditor(e)
-                  setEditor(e)
-                }}
-              >
-                <BoardInner
-                  editor={editor}
-                  identity={identity}
-                  onEditProfile={() => setShowProfile(true)}
-                />
-              </Tldraw>
+              <BoardWithActions
+                editor={editor}
+                identity={identity}
+                onEditProfile={() => setShowProfile(true)}
+                setEditor={setEditor}
+              />
               {editor && <RemoteCursors editor={editor} />}
             </div>
 
@@ -159,22 +158,24 @@ export function Board({
   )
 }
 
-function BoardInner({
+function BoardWithActions({
   editor,
   identity,
   onEditProfile,
+  setEditor,
 }: {
   editor: Editor | null
   identity: Identity
   onEditProfile: () => void
+  setEditor: (editor: Editor | null) => void
 }) {
   const { currentPageId } = usePageContext()
   const notes = useSyncNotes(editor, identity)
-  useSyncDrawings(editor)
+  useSyncCanvasShapes(editor)
   useCursorBroadcast(editor, identity)
 
   const createNote = useMutation(api.notes.create)
-  const clearDrawings = useMutation(api.drawings.clearPage)
+  const clearCanvas = useMutation(api.drawings.clearPage)
 
   const editingId = useEditingNoteId()
   const hasUnfinished = hasUnfinishedOwnedNote(notes, editingId)
@@ -197,19 +198,37 @@ function BoardInner({
     requestNoteFocus(noteId)
   }
 
-  const handleClearDrawings = async () => {
-    if (!currentPageId) return
-    if (!window.confirm('Remove all drawings on this page for everyone?')) return
-    await clearDrawings({ pageId: currentPageId })
+  const handleClearCanvas = async () => {
+    if (!currentPageId || !editor) return
+    if (!window.confirm('Remove all drawings and shapes on this page for everyone?')) return
+    await clearCanvas({ pageId: currentPageId })
+    deleteLocalCanvasShapes(editor)
   }
 
   return (
-    <TopBar
+    <BoardActionsProvider
       onAddNote={() => void handleAddNote()}
-      onClearDrawings={() => void handleClearDrawings()}
       canAddNote={canAddNote}
       addNoteHint={addNoteHint}
-      onEditProfile={onEditProfile}
-    />
+    >
+      <Tldraw
+        licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY}
+        shapeUtils={shapeUtils}
+        components={components}
+        overrides={boardUiOverrides}
+        onMount={(e) => {
+          configureEditor(e)
+          setEditor(e)
+        }}
+      >
+        <TopBar
+          onAddNote={() => void handleAddNote()}
+          onClearDrawings={() => void handleClearCanvas()}
+          canAddNote={canAddNote}
+          addNoteHint={addNoteHint}
+          onEditProfile={onEditProfile}
+        />
+      </Tldraw>
+    </BoardActionsProvider>
   )
 }

@@ -1,5 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+
 export const list = query({
   args: { pageId: v.id('pages') },
   handler: async (ctx, { pageId }) => {
@@ -14,6 +15,7 @@ export const upsert = mutation({
   args: {
     pageId: v.id('pages'),
     shapeId: v.string(),
+    shapeType: v.string(),
     x: v.number(),
     y: v.number(),
     rotation: v.number(),
@@ -30,6 +32,7 @@ export const upsert = mutation({
     const doc = {
       pageId: args.pageId,
       shapeId: args.shapeId,
+      shapeType: args.shapeType,
       x: args.x,
       y: args.y,
       rotation: args.rotation,
@@ -62,10 +65,10 @@ export const remove = mutation({
 export const clearPage = mutation({
   args: { pageId: v.id('pages') },
   handler: async (ctx, { pageId }) => {
-    const drawings = await ctx.db
+    const shapes = await ctx.db
       .query('drawings')
       .withIndex('by_page', (q) => q.eq('pageId', pageId))
       .collect()
-    await Promise.all(drawings.map((d) => ctx.db.delete(d._id)))
+    await Promise.all(shapes.map((d) => ctx.db.delete(d._id)))
   },
 })

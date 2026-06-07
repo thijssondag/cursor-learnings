@@ -47,12 +47,28 @@ export const upsert = mutation({
       updatedAt: Date.now(),
     }
 
+    let profileId = existing?._id
     if (existing) {
       await ctx.db.patch(existing._id, data)
-      return existing._id
+    } else {
+      profileId = await ctx.db.insert('profiles', data)
     }
 
-    return ctx.db.insert('profiles', data)
+    const notes = await ctx.db
+      .query('notes')
+      .withIndex('by_author', (q) => q.eq('authorSessionId', args.sessionId))
+      .collect()
+
+    await Promise.all(
+      notes.map((note) =>
+        ctx.db.patch(note._id, {
+          authorXHandle: xHandle ?? '',
+          authorLinkedInUrl: linkedInUrl ?? '',
+        }),
+      ),
+    )
+
+    return profileId
   },
 })
 

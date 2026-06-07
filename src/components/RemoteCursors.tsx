@@ -4,6 +4,18 @@ import { usePresenceContext, type PresenceUser } from '../context/PresenceContex
 export function RemoteCursors({ editor }: { editor: Editor }) {
   const { remoteUsers } = usePresenceContext()
 
+  const cursors = useValue(
+    'remote-cursors-all',
+    () => {
+      editor.getCamera()
+      return remoteUsers.map((user) => ({
+        user,
+        screen: editor.pageToScreen({ x: user.x, y: user.y }),
+      }))
+    },
+    [editor, remoteUsers],
+  )
+
   return (
     <div
       aria-hidden
@@ -15,23 +27,20 @@ export function RemoteCursors({ editor }: { editor: Editor }) {
         overflow: 'hidden',
       }}
     >
-      {remoteUsers.map((user) => (
-        <RemoteCursor key={user.sessionId} editor={editor} user={user} />
+      {cursors.map(({ user, screen }) => (
+        <RemoteCursorDot key={user.sessionId} user={user} screen={screen} />
       ))}
     </div>
   )
 }
 
-function RemoteCursor({ editor, user }: { editor: Editor; user: PresenceUser }) {
-  const screen = useValue(
-    `remote-cursor-${user.sessionId}`,
-    () => {
-      editor.getCamera()
-      return editor.pageToScreen({ x: user.x, y: user.y })
-    },
-    [editor, user.x, user.y],
-  )
-
+function RemoteCursorDot({
+  user,
+  screen,
+}: {
+  user: PresenceUser
+  screen: { x: number; y: number }
+}) {
   return (
     <div
       style={{
@@ -39,7 +48,7 @@ function RemoteCursor({ editor, user }: { editor: Editor; user: PresenceUser }) 
         left: 0,
         top: 0,
         transform: `translate(${screen.x}px, ${screen.y}px)`,
-        transition: 'transform 75ms linear',
+        transition: 'transform 120ms linear',
         willChange: 'transform',
       }}
     >

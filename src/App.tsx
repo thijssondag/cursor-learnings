@@ -1,9 +1,13 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useMutation } from 'convex/react'
 import { api } from '../convex/_generated/api'
-import { Board } from './board/Board'
+import { BoardLoading } from './components/BoardLoading'
 import { NameModal } from './components/NameModal'
 import { createIdentity, getStoredIdentity, type Identity } from './lib/identity'
+
+const Board = lazy(() =>
+  import('./board/Board').then((module) => ({ default: module.Board })),
+)
 
 function App() {
   const [identity, setIdentity] = useState<Identity | null>(() =>
@@ -34,7 +38,9 @@ function App() {
   }
 
   return (
-    <Board identity={identity} onIdentityChange={handleIdentityChange} />
+    <Suspense fallback={<BoardLoading />}>
+      <Board identity={identity} onIdentityChange={handleIdentityChange} />
+    </Suspense>
   )
 }
 

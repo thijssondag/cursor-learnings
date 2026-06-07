@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
@@ -40,19 +40,19 @@ export function PageProvider({
   const createPageMutation = useMutation(api.pages.create)
   const renamePageMutation = useMutation(api.pages.rename)
   const removePageMutation = useMutation(api.pages.remove)
-  const [currentPageId, setCurrentPageId] = useState<Id<'pages'> | null>(null)
+  const [selectedPageId, setSelectedPageId] = useState<Id<'pages'> | null>(null)
   const [bootstrapped, setBootstrapped] = useState(false)
 
   useEffect(() => {
     void bootstrap().then(() => setBootstrapped(true))
   }, [bootstrap])
 
-  useEffect(() => {
-    if (!bootstrapped || !pages || currentPageId) return
-    const main = pages.find((p) => p.isLocked) ?? pages[0]
-    if (main) setCurrentPageId(main._id)
-  }, [bootstrapped, pages, currentPageId])
+  const defaultPageId = useMemo(() => {
+    if (!bootstrapped || !pages?.length) return null
+    return (pages.find((p) => p.isLocked) ?? pages[0])._id
+  }, [bootstrapped, pages])
 
+  const currentPageId = selectedPageId ?? defaultPageId
   const currentPage = pages?.find((p) => p._id === currentPageId)
 
   const createPage = async (name?: string) => {
@@ -61,7 +61,7 @@ export function PageProvider({
       authorName: identity.name,
       name,
     })
-    setCurrentPageId(id)
+    setSelectedPageId(id)
     return id
   }
 
@@ -78,7 +78,7 @@ export function PageProvider({
       pageId,
       sessionId: identity.sessionId,
     })
-    setCurrentPageId(mainPageId)
+    setSelectedPageId(mainPageId)
     return mainPageId
   }
 
@@ -88,7 +88,7 @@ export function PageProvider({
         pages,
         currentPageId,
         currentPage,
-        setCurrentPageId,
+        setCurrentPageId: setSelectedPageId,
         createPage,
         renamePage,
         deletePage,

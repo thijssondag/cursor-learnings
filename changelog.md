@@ -2,6 +2,53 @@
 
 All notable changes to the Cursor Learnings Board are documented here.
 
+## [0.5.1] — 2026-06-07
+
+Further performance polish (by Thijs / agent).
+
+### Changed
+
+- **Note moves:** Position syncs to Convex on pointer-up only (was throttled every 200ms during drag), cutting write load during note rearranging.
+- **Lazy board load:** tldraw and the board shell load via `React.lazy` after join; lightweight loading screen shown first.
+
+## [0.5.0] — 2026-06-07
+
+Performance optimizations for ~40 concurrent users (by Thijs / agent).
+
+### Changed
+
+- **notes.list:** Replaced per-note hearts/profile queries with denormalized `heartCount`, `authorXHandle`, and `authorLinkedInUrl` on notes; batch `likedByMe` via `hearts.by_session` index (2 reads per page).
+- **hearts.toggle:** Maintains denormalized `heartCount` on the note document.
+- **profiles.upsert:** Propagates social links to all notes by the same author.
+- **presence:** Added `by_lastSeen` index; split `updateCursor` (position only) from `touch` (keepalive); cursor throttle raised to 150ms.
+- **Remote cursors:** Single `useValue` subscription for all remote cursors instead of one per user.
+- **Canvas sync:** Incremental remote reconcile (skip unchanged shapes + version token); draw throttle raised to 120ms.
+- **pages.bootstrap:** No longer full-table scans; use `maintenance.backfillDenormalized` once for legacy data.
+
+## [0.4.1] — 2026-06-07
+
+Fix canvas shape persistence on refresh (by Thijs / agent).
+
+### Fixed
+
+- **Shape load failure:** `drawings:list` crashed when legacy rows lacked `shapeType` (Convex schema validation). Field is now optional; bootstrap backfills missing values.
+- **Save reliability:** New shapes upsert immediately on create; hydration guard prevents premature orphan deletion during initial sync.
+
+## [0.4.0] — 2026-06-07
+
+Sync all canvas shapes and fix toolbar (by Thijs / agent).
+
+### Added
+
+- **Full canvas sync:** All tldraw shapes (draw, geo, arrow, text, line, etc.) sync per page via Convex `drawings` table with `shapeType`. Custom `tip` notes remain in the `notes` table.
+- **Live drawing:** Freehand strokes upsert at 50ms while drawing, flush on pointer-up; static shapes at 200ms.
+- **Custom toolbar:** All shape tools except media upload and tldraw sticky note; custom **Add note** button creates our Convex notes.
+
+### Changed
+
+- **Clear canvas** (was "Clear drawings") removes all synced canvas shapes for everyone; notes are untouched.
+- **Editor guards** block creation of image, video, bookmark, embed, and tldraw note shapes.
+
 ## [0.3.3] — 2026-06-07
 
 Cursor watermark updates (by Thijs / agent).

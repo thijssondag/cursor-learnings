@@ -16,11 +16,14 @@ export default defineSchema({
     pageId: v.optional(v.id('pages')),
     authorSessionId: v.string(),
     authorName: v.string(),
+    authorXHandle: v.optional(v.string()),
+    authorLinkedInUrl: v.optional(v.string()),
     text: v.string(),
     x: v.number(),
     y: v.number(),
     rotation: v.number(),
     color: v.string(),
+    heartCount: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index('by_author', ['authorSessionId'])
@@ -29,6 +32,7 @@ export default defineSchema({
   drawings: defineTable({
     pageId: v.id('pages'),
     shapeId: v.string(),
+    shapeType: v.optional(v.string()),
     x: v.number(),
     y: v.number(),
     rotation: v.number(),
@@ -43,7 +47,8 @@ export default defineSchema({
     sessionId: v.string(),
   })
     .index('by_note', ['noteId'])
-    .index('by_note_session', ['noteId', 'sessionId']),
+    .index('by_note_session', ['noteId', 'sessionId'])
+    .index('by_session', ['sessionId']),
 
   presence: defineTable({
     sessionId: v.string(),
@@ -52,7 +57,9 @@ export default defineSchema({
     x: v.number(),
     y: v.number(),
     lastSeen: v.number(),
-  }).index('by_session', ['sessionId']),
+  })
+    .index('by_session', ['sessionId'])
+    .index('by_lastSeen', ['lastSeen']),
 
   profiles: defineTable({
     sessionId: v.string(),

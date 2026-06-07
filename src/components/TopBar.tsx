@@ -110,7 +110,7 @@ export function TopBar({
             border: '1px solid #e5e5e5',
           }}
         >
-          Clear drawings
+          Clear canvas
         </button>
         <button
           type="button"

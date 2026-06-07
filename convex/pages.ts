@@ -1,6 +1,5 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import type { Id } from './_generated/dataModel'
 import type { MutationCtx } from './_generated/server'
 
 const MAIN_PAGE_NAME = 'Cursor Learnings'
@@ -22,22 +21,9 @@ async function getOrCreateMainPage(ctx: MutationCtx) {
   })
 }
 
-async function backfillNotePageIds(ctx: MutationCtx, mainPageId: Id<'pages'>) {
-  const notes = await ctx.db.query('notes').collect()
-  await Promise.all(
-    notes
-      .filter((n) => !n.pageId)
-      .map((n) => ctx.db.patch(n._id, { pageId: mainPageId })),
-  )
-}
-
 export const bootstrap = mutation({
   args: {},
-  handler: async (ctx) => {
-    const mainPageId = await getOrCreateMainPage(ctx)
-    await backfillNotePageIds(ctx, mainPageId)
-    return mainPageId
-  },
+  handler: async (ctx) => getOrCreateMainPage(ctx),
 })
 
 export const list = query({
