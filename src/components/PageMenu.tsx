@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Id } from '../../convex/_generated/dataModel'
 import { usePageContext, type BoardPage } from '../context/PageContext'
+import { APP_VERSION } from '../lib/constants'
 
 export function PageMenu() {
   const { pages, currentPage, currentPageId, setCurrentPageId, createPage, renamePage, deletePage } =
@@ -257,6 +258,21 @@ export function PageMenu() {
               New page
             </button>
           )}
+          <div
+            aria-hidden
+            style={{
+              fontSize: 10,
+              lineHeight: 1.2,
+              color: '#000000',
+              opacity: 0.3,
+              textAlign: 'center',
+              padding: '4px 8px 2px',
+              fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+              userSelect: 'none',
+            }}
+          >
+            v{APP_VERSION}
+          </div>
         </div>
       )}
     </div>

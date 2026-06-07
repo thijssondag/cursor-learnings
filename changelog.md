@@ -2,6 +2,14 @@
 
 All notable changes to the Cursor Learnings Board are documented here.
 
+## [0.0.1] — 2026-06-07
+
+Live deploy marker (by Thijs / agent).
+
+### Added
+
+- **Version label:** `v0.0.1` shown under "New page" in the pages menu (small, 30% opacity) to confirm which build is live.
+
 ## [0.5.1] — 2026-06-07
 
 Further performance polish (by Thijs / agent).
