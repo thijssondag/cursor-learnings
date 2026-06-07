@@ -31,6 +31,16 @@ Initial version (by Thijs / agent).
 - Identity is browser-local and unauthenticated; ownership is best-effort (acceptable for a trusted workshop).
 - tldraw shows a small watermark without a license key.
 
+## [0.1.3] — 2026-06-05
+
+Fix Vercel white screen (by Thijs / agent).
+
+### Fixed
+
+- **Vercel build:** Added `vercel.json` so builds run `npx convex deploy --cmd 'npm run build'`, injecting `VITE_CONVEX_URL` from `CONVEX_DEPLOY_KEY`.
+- **Startup:** Show a clear configuration message instead of a blank page when `VITE_CONVEX_URL` is missing.
+- **Gitignore:** Ignore `.env` files so deploy keys are not committed.
+
 ## [0.1.2] — 2026-06-05
 
 Multiplayer cursor reliability and mockup-accurate rendering (by Thijs / agent).
