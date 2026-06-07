@@ -50,8 +50,8 @@ body {
 
 .board-cursor-mark {
   position: absolute;
-  bottom: max(8px, env(safe-area-inset-bottom));
-  left: max(8px, env(safe-area-inset-left));
+  bottom: max(2%, env(safe-area-inset-bottom));
+  right: max(2%, env(safe-area-inset-right));
   pointer-events: auto;
   opacity: 0.35;
   line-height: 0;
@@ -64,7 +64,7 @@ body {
 
 .board-cursor-mark img {
   display: block;
-  height: 18px;
+  height: 28px;
   width: auto;
   pointer-events: none;
 }

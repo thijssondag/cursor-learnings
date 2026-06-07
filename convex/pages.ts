@@ -74,6 +74,22 @@ export const create = mutation({
   },
 })
 
+export const rename = mutation({
+  args: { pageId: v.id('pages'), sessionId: v.string(), name: v.string() },
+  handler: async (ctx, args) => {
+    const page = await ctx.db.get(args.pageId)
+    if (!page) throw new Error('Page not found')
+    if (page.isLocked) throw new Error('This page cannot be renamed')
+    if (page.authorSessionId !== args.sessionId) {
+      throw new Error('You can only rename pages you created')
+    }
+    const name = args.name.trim()
+    if (!name) throw new Error('Page name is required')
+    if (name.length > 48) throw new Error('Page name too long')
+    await ctx.db.patch(args.pageId, { name })
+  },
+})
+
 export const remove = mutation({
   args: { pageId: v.id('pages'), sessionId: v.string() },
   handler: async (ctx, args) => {

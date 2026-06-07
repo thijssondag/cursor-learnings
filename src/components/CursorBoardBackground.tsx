@@ -8,7 +8,7 @@ export function CursorBoardBackground() {
         aria-label="Cursor"
         className="board-cursor-mark"
       >
-        <img src="/cursor-mark.svg" alt="" draggable={false} />
+        <img src="/cursor-lockup-vertical.png" alt="" draggable={false} />
       </a>
     </div>
   )

@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Id } from '../../convex/_generated/dataModel'
-import { usePageContext } from '../context/PageContext'
+import { usePageContext, type BoardPage } from '../context/PageContext'
 
 export function PageMenu() {
-  const { pages, currentPage, currentPageId, setCurrentPageId, createPage, deletePage } =
+  const { pages, currentPage, currentPageId, setCurrentPageId, createPage, renamePage, deletePage } =
     usePageContext()
   const [open, setOpen] = useState(false)
   const [creating, setCreating] = useState(false)
   const [newPageName, setNewPageName] = useState('')
+  const [editingPageId, setEditingPageId] = useState<Id<'pages'> | null>(null)
+  const [editName, setEditName] = useState('')
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -16,6 +18,7 @@ export function PageMenu() {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setOpen(false)
         setCreating(false)
+        setEditingPageId(null)
       }
     }
     window.addEventListener('pointerdown', onPointerDown)
@@ -30,10 +33,30 @@ export function PageMenu() {
     setOpen(false)
   }
 
-  const handleDelete = async () => {
-    if (!currentPageId || !currentPage?.canDelete) return
-    if (!window.confirm(`Delete "${currentPage.name}" and all its notes?`)) return
-    await deletePage(currentPageId)
+  const startEditing = (page: BoardPage) => {
+    setEditingPageId(page._id)
+    setEditName(page.name)
+  }
+
+  const cancelEditing = () => {
+    setEditingPageId(null)
+    setEditName('')
+  }
+
+  const handleRename = async (page: BoardPage) => {
+    const name = editName.trim()
+    if (!name || name === page.name) {
+      cancelEditing()
+      return
+    }
+    await renamePage(page._id, name)
+    cancelEditing()
+  }
+
+  const handleDeletePage = async (page: BoardPage) => {
+    if (!page.canDelete) return
+    if (!window.confirm(`Delete "${page.name}" and all its notes?`)) return
+    await deletePage(page._id)
     setOpen(false)
   }
 
@@ -80,7 +103,7 @@ export function PageMenu() {
             top: '100%',
             left: 0,
             marginTop: 8,
-            minWidth: 220,
+            minWidth: 260,
             background: '#ffffff',
             border: '1px solid #e5e5e5',
             borderRadius: 12,
@@ -90,32 +113,99 @@ export function PageMenu() {
           }}
         >
           {pages?.map((page) => (
-            <button
+            <div
               key={page._id}
-              type="button"
-              onClick={() => {
-                setCurrentPageId(page._id as Id<'pages'>)
-                setOpen(false)
-              }}
               style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                border: 'none',
-                background: page._id === currentPageId ? '#f5f3f1' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
                 borderRadius: 8,
-                padding: '10px 12px',
-                fontSize: 14,
-                fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-                color: '#000000',
-                cursor: 'pointer',
+                padding: '4px 6px',
+                background: page._id === currentPageId ? '#f5f3f1' : 'transparent',
               }}
             >
-              {page.name}
-              {page.isLocked && (
-                <span style={{ marginLeft: 6, fontSize: 11, color: '#a59f97' }}>locked</span>
+              {editingPageId === page._id ? (
+                <input
+                  autoFocus
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void handleRename(page)
+                    if (e.key === 'Escape') cancelEditing()
+                  }}
+                  onBlur={() => void handleRename(page)}
+                  maxLength={48}
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    boxSizing: 'border-box',
+                    border: '1px solid #e5e5e5',
+                    borderRadius: 4,
+                    padding: '6px 8px',
+                    fontSize: 14,
+                    fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+                  }}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPageId(page._id as Id<'pages'>)
+                    setOpen(false)
+                  }}
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    textAlign: 'left',
+                    border: 'none',
+                    background: 'transparent',
+                    borderRadius: 6,
+                    padding: '6px 8px',
+                    fontSize: 14,
+                    fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+                    color: '#000000',
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {page.name}
+                  {page.isLocked && (
+                    <span style={{ marginLeft: 6, fontSize: 11, color: '#a59f97' }}>locked</span>
+                  )}
+                </button>
               )}
-            </button>
+
+              {page.canDelete && editingPageId !== page._id && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    aria-label="Rename page"
+                    title="Rename page"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      startEditing(page)
+                    }}
+                    style={iconBtnStyle}
+                  >
+                    <PencilIcon />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Delete page"
+                    title="Delete page"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      void handleDeletePage(page)
+                    }}
+                    style={{ ...iconBtnStyle, color: '#b42318' }}
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
+              )}
+            </div>
           ))}
 
           <div style={{ height: 1, background: '#e5e5e5', margin: '6px 0' }} />
@@ -167,20 +257,25 @@ export function PageMenu() {
               New page
             </button>
           )}
-
-          {currentPage?.canDelete && (
-            <button
-              type="button"
-              onClick={() => void handleDelete()}
-              style={{ ...menuItemStyle, color: '#b42318' }}
-            >
-              Delete this page
-            </button>
-          )}
         </div>
       )}
     </div>
   )
+}
+
+const iconBtnStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 28,
+  height: 28,
+  border: 'none',
+  background: 'transparent',
+  borderRadius: 6,
+  color: '#777169',
+  cursor: 'pointer',
+  padding: 0,
+  flexShrink: 0,
 }
 
 const menuItemStyle: React.CSSProperties = {
@@ -209,4 +304,32 @@ function menuBtnStyle(bg: string, color: string, bordered = false): React.CSSPro
     fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
     cursor: 'pointer',
   }
+}
+
+function PencilIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 7h16M9 7V5h6v2M10 11v5M14 11v5M6 7l1 12h10l1-12"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
 }

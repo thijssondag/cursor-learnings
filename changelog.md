@@ -2,6 +2,29 @@
 
 All notable changes to the Cursor Learnings Board are documented here.
 
+## [0.3.3] — 2026-06-07
+
+Cursor watermark updates (by Thijs / agent).
+
+### Changed
+
+- **Logo:** Moved the Cursor watermark from bottom-left to bottom-right to leave room for the canvas dimension scaler on the left.
+- **Logo asset:** Switched to the official vertical 2D lockup (`public/cursor-lockup-vertical.png`) with a transparent background.
+- **Logo position:** Inset watermark 2% from the bottom and right edges.
+
+## [0.3.2] — 2026-06-07
+
+Page menu per-row actions (by Thijs / agent).
+
+### Added
+
+- **Page rename:** `pages.rename` Convex mutation; owners can rename their pages via a pencil icon in the page menu.
+- **Per-row actions:** Edit and delete icons appear beside each page you own; locked pages show no icons.
+
+### Changed
+
+- **Page menu:** Removed the bottom "Delete this page" item; delete is now a trash icon on each deletable page row.
+
 ## [0.3.1] — 2026-06-07
 
 Fix production white screen after ~5 seconds (by Thijs / agent).

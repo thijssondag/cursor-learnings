@@ -22,6 +22,7 @@ interface PageContextValue {
   currentPage: BoardPage | undefined
   setCurrentPageId: (id: Id<'pages'>) => void
   createPage: (name?: string) => Promise<Id<'pages'>>
+  renamePage: (pageId: Id<'pages'>, name: string) => Promise<void>
   deletePage: (pageId: Id<'pages'>) => Promise<Id<'pages'>>
 }
 
@@ -37,6 +38,7 @@ export function PageProvider({
   const pages = useQuery(api.pages.list, { sessionId: identity.sessionId })
   const bootstrap = useMutation(api.pages.bootstrap)
   const createPageMutation = useMutation(api.pages.create)
+  const renamePageMutation = useMutation(api.pages.rename)
   const removePageMutation = useMutation(api.pages.remove)
   const [currentPageId, setCurrentPageId] = useState<Id<'pages'> | null>(null)
   const [bootstrapped, setBootstrapped] = useState(false)
@@ -63,6 +65,14 @@ export function PageProvider({
     return id
   }
 
+  const renamePage = async (pageId: Id<'pages'>, name: string) => {
+    await renamePageMutation({
+      pageId,
+      sessionId: identity.sessionId,
+      name,
+    })
+  }
+
   const deletePage = async (pageId: Id<'pages'>) => {
     const mainPageId = await removePageMutation({
       pageId,
@@ -80,6 +90,7 @@ export function PageProvider({
         currentPage,
         setCurrentPageId,
         createPage,
+        renamePage,
         deletePage,
       }}
     >
