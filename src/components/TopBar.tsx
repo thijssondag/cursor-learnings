@@ -1,7 +1,38 @@
 import { usePresenceContext } from '../context/PresenceContext'
+import { PageMenu } from './PageMenu'
 
-export function TopBar({ onAddNote }: { onAddNote: () => void }) {
+const pillBtnBase: React.CSSProperties = {
+  pointerEvents: 'auto',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  borderRadius: 9999,
+  padding: '8px 16px',
+  minHeight: 40,
+  fontSize: 14,
+  fontWeight: 500,
+  fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+  whiteSpace: 'nowrap',
+  cursor: 'pointer',
+  boxShadow:
+    'rgba(0,0,0,0.06) 0px 0px 0px 1px, rgba(0,0,0,0.04) 0px 1px 2px, rgba(0,0,0,0.04) 0px 2px 4px',
+}
+
+export function TopBar({
+  onAddNote,
+  onClearDrawings,
+  canAddNote,
+  addNoteHint,
+  onEditProfile,
+}: {
+  onAddNote: () => void
+  onClearDrawings: () => void
+  canAddNote: boolean
+  addNoteHint?: string
+  onEditProfile: () => void
+}) {
   const { onlineCount } = usePresenceContext()
+
   return (
     <div
       style={{
@@ -27,20 +58,7 @@ export function TopBar({ onAddNote }: { onAddNote: () => void }) {
           pointerEvents: 'auto',
         }}
       >
-        <span
-          style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontWeight: 500,
-            fontSize: 22,
-            lineHeight: 1.1,
-            color: '#000000',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          Cursor Learnings Board
-        </span>
+        <PageMenu />
         <span
           style={{
             display: 'inline-flex',
@@ -62,33 +80,56 @@ export function TopBar({ onAddNote }: { onAddNote: () => void }) {
           />
           {onlineCount} online
         </span>
+        <button
+          type="button"
+          onClick={onEditProfile}
+          style={{
+            border: 'none',
+            background: 'transparent',
+            padding: 0,
+            fontSize: 12,
+            color: '#a59f97',
+            cursor: 'pointer',
+            fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+            textDecoration: 'underline',
+            textUnderlineOffset: 2,
+          }}
+        >
+          Edit profile
+        </button>
       </div>
 
-      <button
-        onClick={onAddNote}
-        style={{
-          pointerEvents: 'auto',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          background: '#000000',
-          color: '#fdfcfc',
-          border: '1px solid #e5e5e5',
-          borderRadius: 9999,
-          padding: '8px 16px',
-          minHeight: 40,
-          fontSize: 14,
-          fontWeight: 500,
-          fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-          cursor: 'pointer',
-          boxShadow:
-            'rgba(0,0,0,0.06) 0px 0px 0px 1px, rgba(0,0,0,0.04) 0px 1px 2px, rgba(0,0,0,0.04) 0px 2px 4px',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
-        <span>Add note</span>
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto' }}>
+        <button
+          type="button"
+          onClick={onClearDrawings}
+          style={{
+            ...pillBtnBase,
+            background: '#ffffff',
+            color: '#000000',
+            border: '1px solid #e5e5e5',
+          }}
+        >
+          Clear drawings
+        </button>
+        <button
+          type="button"
+          onClick={canAddNote ? onAddNote : undefined}
+          disabled={!canAddNote}
+          title={!canAddNote ? addNoteHint : undefined}
+          style={{
+            ...pillBtnBase,
+            background: '#000000',
+            color: '#fdfcfc',
+            border: '1px solid #e5e5e5',
+            cursor: canAddNote ? 'pointer' : 'not-allowed',
+            opacity: canAddNote ? 1 : 0.45,
+          }}
+        >
+          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
+          <span>Add note</span>
+        </button>
+      </div>
     </div>
   )
 }

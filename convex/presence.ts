@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 
 // Cursors older than this are considered offline.
-const STALE_MS = 10_000
+const STALE_MS = 30_000
 
 export const heartbeat = mutation({
   args: {

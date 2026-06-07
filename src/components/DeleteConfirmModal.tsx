@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom'
+
 export function DeleteConfirmModal({
   onConfirm,
   onCancel,
@@ -5,12 +7,13 @@ export function DeleteConfirmModal({
   onConfirm: () => void
   onCancel: () => void
 }) {
-  return (
+  return createPortal(
     <div
+      className="modal-backdrop-enter"
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 1000,
+        zIndex: 20000,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -23,6 +26,7 @@ export function DeleteConfirmModal({
         role="dialog"
         aria-labelledby="delete-title"
         aria-modal="true"
+        className="modal-card-enter"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',
@@ -86,7 +90,11 @@ export function DeleteConfirmModal({
           </button>
           <button
             type="button"
-            onClick={onConfirm}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation()
+              onConfirm()
+            }}
             style={{
               flex: 1,
               background: '#000000',
@@ -105,6 +113,59 @@ export function DeleteConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
+  )
+}
+
+function TrashIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 7h16M9 7V5h6v2M10 11v5M14 11v5M6 7l1 12h10l1-12"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function DeleteNoteButton({
+  onClick,
+}: {
+  onClick: (e: React.MouseEvent) => void
+}) {
+  const stop = (e: React.PointerEvent | React.MouseEvent) => e.stopPropagation()
+
+  return (
+    <button
+      type="button"
+      title="Delete note"
+      onPointerDown={stop}
+      onClick={(e) => {
+        stop(e)
+        onClick(e)
+      }}
+      className="delete-note-btn"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        border: 'none',
+        background: 'transparent',
+        color: '#b1b0b0',
+        cursor: 'pointer',
+        borderRadius: 8,
+        pointerEvents: 'auto',
+        width: 36,
+        height: 36,
+        padding: 0,
+        transition: 'background 150ms ease, color 150ms ease',
+      }}
+    >
+      <TrashIcon />
+    </button>
   )
 }

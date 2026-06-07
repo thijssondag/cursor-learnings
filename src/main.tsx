@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { ConvexProvider, ConvexReactClient } from 'convex/react'
 import './index.css'
 import App from './App.tsx'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 const convexUrl = import.meta.env.VITE_CONVEX_URL as string | undefined
 const root = document.getElementById('root')!
@@ -34,9 +35,11 @@ if (!convexUrl) {
   const convex = new ConvexReactClient(convexUrl)
   createRoot(root).render(
     <StrictMode>
-      <ConvexProvider client={convex}>
-        <App />
-      </ConvexProvider>
+      <ErrorBoundary>
+        <ConvexProvider client={convex}>
+          <App />
+        </ConvexProvider>
+      </ErrorBoundary>
     </StrictMode>,
   )
 }

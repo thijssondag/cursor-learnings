@@ -5,6 +5,7 @@ import { createShapeId } from 'tldraw'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
 import type { Identity } from '../lib/identity'
+import { usePageContext } from '../context/PageContext'
 import {
   clearDraggingNotes,
   getEditingNoteId,
@@ -22,19 +23,21 @@ type ConvexNote = {
   rotation: number
   color: string
   authorName: string
+  authorXHandle: string
+  authorLinkedInUrl: string
   heartCount: number
   likedByMe: boolean
   isOwner: boolean
 }
 
-/**
- * Keeps tldraw's canvas in sync with Convex (the single source of truth):
- *  - Convex notes  -> tldraw note shapes (create / update / delete)
- *  - anyone drags  -> Convex move (persist new x/y)
- *  - owner edits   -> Convex update (text only)
- */
 export function useSyncNotes(editor: Editor | null, identity: Identity) {
-  const notes = useQuery(api.notes.list, { sessionId: identity.sessionId })
+  const { currentPageId } = usePageContext()
+  const notes = useQuery(
+    api.notes.list,
+    currentPageId
+      ? { sessionId: identity.sessionId, pageId: currentPageId }
+      : 'skip',
+  )
   const moveNote = useMutation(api.notes.move)
 
   const notesByIdRef = useRef<Map<string, ConvexNote>>(new Map())
@@ -52,7 +55,6 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
     [moveNote],
   )
 
-  // Reconcile Convex -> tldraw whenever the notes query changes.
   useEffect(() => {
     if (!editor || !notes) return
 
@@ -87,6 +89,8 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
               text: n.text,
               color: n.color,
               authorName: n.authorName,
+              authorXHandle: n.authorXHandle,
+              authorLinkedInUrl: n.authorLinkedInUrl,
               heartCount: n.heartCount,
               likedByMe: n.likedByMe,
               isOwner: n.isOwner,
@@ -101,8 +105,14 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
         if (shape.props.likedByMe !== n.likedByMe) nextProps.likedByMe = n.likedByMe
         if (shape.props.isOwner !== n.isOwner) nextProps.isOwner = n.isOwner
         if (shape.props.authorName !== n.authorName) nextProps.authorName = n.authorName
+        if (shape.props.noteId !== n._id) nextProps.noteId = n._id
+        if (shape.props.authorXHandle !== n.authorXHandle) {
+          nextProps.authorXHandle = n.authorXHandle
+        }
+        if (shape.props.authorLinkedInUrl !== n.authorLinkedInUrl) {
+          nextProps.authorLinkedInUrl = n.authorLinkedInUrl
+        }
 
-        // Don't snap back a note the user is currently dragging.
         const posChanged =
           !isNoteDragging(n._id) && (shape.x !== n.x || shape.y !== n.y)
 
@@ -117,13 +127,14 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
       }
 
       for (const s of existing) {
-        if (!map.has(s.props.noteId)) editor.deleteShape(s.id)
+        if (!s.props.noteId || !map.has(s.props.noteId)) {
+          editor.deleteShape(s.id)
+        }
       }
     })
     isApplyingRemoteRef.current = false
   }, [editor, notes])
 
-  // tldraw -> Convex: persist moves for all notes.
   useEffect(() => {
     if (!editor) return
 
@@ -165,4 +176,6 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
       clearDraggingNotes()
     }
   }, [editor, persistMove])
+
+  return notes
 }

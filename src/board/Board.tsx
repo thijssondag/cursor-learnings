@@ -1,51 +1,159 @@
 import { useState } from 'react'
-import { Tldraw, type Editor, type TLComponents } from 'tldraw'
+import {
+  Tldraw,
+  SelectTool,
+  DrawShapeTool,
+  DefaultSizeStyle,
+  type Editor,
+  type TLComponents,
+} from 'tldraw'
 import 'tldraw/tldraw.css'
 import { useMutation } from 'convex/react'
 import { api } from '../../convex/_generated/api'
+import type { Id } from '../../convex/_generated/dataModel'
 import { IdentityProvider } from '../context/IdentityContext'
 import { PresenceProvider } from '../context/PresenceContext'
+import { DeleteProvider } from '../context/DeleteContext'
+import { PageProvider, usePageContext } from '../context/PageContext'
 import type { Identity } from '../lib/identity'
 import { NOTE_HEIGHT, NOTE_WIDTH, randomTilt } from '../lib/constants'
+import {
+  hasUnfinishedOwnedNote,
+  requestNoteFocus,
+  useEditingNoteId,
+} from '../lib/editingState'
+import { updateIdentity } from '../lib/identity'
 import { NoteShapeUtil } from './NoteShapeUtil'
 import { useSyncNotes } from './useSyncNotes'
+import { useSyncDrawings } from './useSyncDrawings'
 import { useCursorBroadcast } from './usePresence'
 import { TopBar } from '../components/TopBar'
 import { RemoteCursors } from '../components/RemoteCursors'
+import { CursorBoardBackground } from '../components/CursorBoardBackground'
+import { ProfileModal } from '../components/ProfileModal'
+import { DeleteConfirmModal } from '../components/DeleteConfirmModal'
 
 const shapeUtils = [NoteShapeUtil]
+const boardTools = [SelectTool, DrawShapeTool]
 
-// Hide tldraw's default menus/panels — we use our own minimal top bar.
+// Minimal tldraw UI: toolbar (select + draw + color) and navigation (zoom).
 const components: TLComponents = {
-  MenuPanel: null,
-  PageMenu: null,
+  Background: CursorBoardBackground,
   MainMenu: null,
+  PageMenu: null,
+  MenuPanel: null,
   QuickActions: null,
   ActionsMenu: null,
   HelpMenu: null,
-  NavigationPanel: null,
-  Toolbar: null,
   StylePanel: null,
+  PeopleMenu: null,
+  SharePanel: null,
   DebugPanel: null,
   DebugMenu: null,
 }
 
-export function Board({ identity }: { identity: Identity }) {
+function configureEditor(editor: Editor) {
+  editor.setStyleForNextShapes(DefaultSizeStyle, 'm')
+}
+
+export function Board({
+  identity,
+  onIdentityChange,
+}: {
+  identity: Identity
+  onIdentityChange: (identity: Identity) => void
+}) {
   const [editor, setEditor] = useState<Editor | null>(null)
+  const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null)
+  const [showProfile, setShowProfile] = useState(false)
+  const removeNote = useMutation(api.notes.remove)
+  const upsertProfile = useMutation(api.profiles.upsert)
+
+  const overlayOpen = deleteNoteId !== null || showProfile
+
+  const handleConfirmDelete = async () => {
+    if (!deleteNoteId) return
+    const noteId = deleteNoteId
+    setDeleteNoteId(null)
+    if (editor) editor.setSelectedShapes([])
+    try {
+      await removeNote({
+        noteId: noteId as Id<'notes'>,
+        sessionId: identity.sessionId,
+      })
+    } catch (err) {
+      console.error('Failed to delete note:', err)
+    }
+  }
+
+  const handleRequestDelete = (noteId: string) => {
+    if (!noteId) return
+    if (editor) editor.setSelectedShapes([])
+    setDeleteNoteId(noteId)
+  }
+
+  const handleProfileSave = async (updates: {
+    name: string
+    xHandle: string
+    linkedInUrl: string
+  }) => {
+    const next = updateIdentity(identity, updates)
+    onIdentityChange(next)
+    await upsertProfile({
+      sessionId: next.sessionId,
+      name: next.name,
+      xHandle: next.xHandle,
+      linkedInUrl: next.linkedInUrl,
+    })
+    setShowProfile(false)
+  }
 
   return (
     <IdentityProvider identity={identity}>
       <PresenceProvider identity={identity}>
-        <div style={{ position: 'fixed', inset: 0 }}>
-          <Tldraw
-            shapeUtils={shapeUtils}
-            components={components}
-            onMount={(e) => setEditor(e)}
-          >
-            <BoardInner editor={editor} identity={identity} />
-          </Tldraw>
-          {editor && <RemoteCursors editor={editor} />}
-        </div>
+        <PageProvider identity={identity}>
+          <DeleteProvider onRequestDelete={handleRequestDelete}>
+            <div
+              style={{
+                position: 'fixed',
+                inset: 0,
+                pointerEvents: overlayOpen ? 'none' : undefined,
+              }}
+            >
+              <Tldraw
+                licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY}
+                shapeUtils={shapeUtils}
+                tools={boardTools}
+                components={components}
+                onMount={(e) => {
+                  configureEditor(e)
+                  setEditor(e)
+                }}
+              >
+                <BoardInner
+                  editor={editor}
+                  identity={identity}
+                  onEditProfile={() => setShowProfile(true)}
+                />
+              </Tldraw>
+              {editor && <RemoteCursors editor={editor} />}
+            </div>
+
+            {deleteNoteId && (
+              <DeleteConfirmModal
+                onCancel={() => setDeleteNoteId(null)}
+                onConfirm={() => void handleConfirmDelete()}
+              />
+            )}
+            {showProfile && (
+              <ProfileModal
+                identity={identity}
+                onSave={(updates) => void handleProfileSave(updates)}
+                onClose={() => setShowProfile(false)}
+              />
+            )}
+          </DeleteProvider>
+        </PageProvider>
       </PresenceProvider>
     </IdentityProvider>
   )
@@ -54,19 +162,30 @@ export function Board({ identity }: { identity: Identity }) {
 function BoardInner({
   editor,
   identity,
+  onEditProfile,
 }: {
   editor: Editor | null
   identity: Identity
+  onEditProfile: () => void
 }) {
-  useSyncNotes(editor, identity)
+  const { currentPageId } = usePageContext()
+  const notes = useSyncNotes(editor, identity)
+  useSyncDrawings(editor)
   useCursorBroadcast(editor, identity)
 
   const createNote = useMutation(api.notes.create)
+  const clearDrawings = useMutation(api.drawings.clearPage)
 
-  const handleAddNote = () => {
-    if (!editor) return
+  const editingId = useEditingNoteId()
+  const hasUnfinished = hasUnfinishedOwnedNote(notes, editingId)
+  const canAddNote = !hasUnfinished
+  const addNoteHint = 'Finish or delete your current note first'
+
+  const handleAddNote = async () => {
+    if (!editor || !canAddNote || !currentPageId) return
     const center = editor.getViewportPageBounds().center
-    void createNote({
+    const noteId = await createNote({
+      pageId: currentPageId,
       sessionId: identity.sessionId,
       authorName: identity.name,
       text: '',
@@ -75,7 +194,22 @@ function BoardInner({
       rotation: randomTilt(),
       color: identity.color,
     })
+    requestNoteFocus(noteId)
   }
 
-  return <TopBar onAddNote={handleAddNote} />
+  const handleClearDrawings = async () => {
+    if (!currentPageId) return
+    if (!window.confirm('Remove all drawings on this page for everyone?')) return
+    await clearDrawings({ pageId: currentPageId })
+  }
+
+  return (
+    <TopBar
+      onAddNote={() => void handleAddNote()}
+      onClearDrawings={() => void handleClearDrawings()}
+      canAddNote={canAddNote}
+      addNoteHint={addNoteHint}
+      onEditProfile={onEditProfile}
+    />
+  )
 }

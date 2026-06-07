@@ -71,10 +71,13 @@ Open the app in **two different browsers** (or one normal + one incognito window
 ## Deploying (Vercel)
 
 1. Push to GitHub and import the repo in Vercel.
-2. Set the build command to `npx convex deploy --cmd 'npm run build'` (this provisions the production Convex deployment and builds the frontend), or run `npx convex deploy` once and add `VITE_CONVEX_URL` as a Vercel env var with `npm run build` as the build command.
-3. Connecting `main` gives auto-deploys; pull requests get preview URLs.
+2. Set the build command to `npx convex deploy --cmd 'npm run build'` (see `vercel.json`), or use `npm run build` with `VITE_CONVEX_URL` set manually.
+3. Add Vercel environment variables:
+   - `CONVEX_DEPLOY_KEY` — production deploy key (`prod:...|...`)
+   - `VITE_TLDRAW_LICENSE_KEY` — tldraw license (required on HTTPS; without it the canvas blanks after ~5s)
+4. Connecting `main` gives auto-deploys; pull requests get preview URLs.
 
 ## Notes / caveats
 
-- tldraw is free in development and shows a small watermark without a license key — fine for a workshop. A free license key removes it.
+- tldraw works on localhost without a key; **production requires** `VITE_TLDRAW_LICENSE_KEY` (trial or hobby license from [tldraw.dev](https://tldraw.dev/pricing)).
 - Identity is browser-local and not authenticated; ownership is best-effort (good enough for a trusted workshop crowd).

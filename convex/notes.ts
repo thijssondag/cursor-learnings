@@ -2,11 +2,14 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 
-// Returns every note plus heart count and whether the requesting session liked it.
+// Returns notes on a page plus heart count and whether the requesting session liked it.
 export const list = query({
-  args: { sessionId: v.string() },
-  handler: async (ctx, { sessionId }) => {
-    const notes = await ctx.db.query('notes').collect()
+  args: { sessionId: v.string(), pageId: v.id('pages') },
+  handler: async (ctx, { sessionId, pageId }) => {
+    const notes = await ctx.db
+      .query('notes')
+      .withIndex('by_page', (q) => q.eq('pageId', pageId))
+      .collect()
 
     return Promise.all(
       notes.map(async (note) => {
@@ -15,11 +18,20 @@ export const list = query({
           .withIndex('by_note', (q) => q.eq('noteId', note._id))
           .collect()
 
+        const profile = await ctx.db
+          .query('profiles')
+          .withIndex('by_session', (q) =>
+            q.eq('sessionId', note.authorSessionId),
+          )
+          .unique()
+
         return {
           ...note,
           heartCount: hearts.length,
           likedByMe: hearts.some((h) => h.sessionId === sessionId),
           isOwner: note.authorSessionId === sessionId,
+          authorXHandle: profile?.xHandle ?? '',
+          authorLinkedInUrl: profile?.linkedInUrl ?? '',
         }
       }),
     )
@@ -28,6 +40,7 @@ export const list = query({
 
 export const create = mutation({
   args: {
+    pageId: v.id('pages'),
     sessionId: v.string(),
     authorName: v.string(),
     text: v.string(),
@@ -40,6 +53,7 @@ export const create = mutation({
     const authorName = args.authorName.trim()
     if (!authorName) throw new Error('Name is required to create a note')
     return ctx.db.insert('notes', {
+      pageId: args.pageId,
       authorSessionId: args.sessionId,
       authorName,
       text: args.text,
@@ -52,7 +66,6 @@ export const create = mutation({
   },
 })
 
-// Owner-only text edits.
 export const update = mutation({
   args: {
     noteId: v.id('notes'),
@@ -65,7 +78,6 @@ export const update = mutation({
   },
 })
 
-// Anyone can reposition a note on the board.
 export const move = mutation({
   args: {
     noteId: v.id('notes'),

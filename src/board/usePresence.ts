@@ -10,7 +10,7 @@ const THROTTLE_MS = 70
 
 /**
  * Streams the local cursor position to Convex (throttled) with keepalive
- * and reliable disconnect on tab close / background.
+ * and reliable disconnect on tab close only (keepalive maintains long sessions).
  */
 export function useCursorBroadcast(editor: Editor | null, identity: Identity) {
   const heartbeat = useMutation(api.presence.heartbeat)
@@ -56,18 +56,9 @@ export function useCursorBroadcast(editor: Editor | null, identity: Identity) {
       void leave({ sessionId: identity.sessionId })
     }
 
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        void leave({ sessionId: identity.sessionId })
-      } else {
-        send(true)
-      }
-    }
-
     container.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pagehide', onPageHide)
     window.addEventListener('beforeunload', onPageHide)
-    document.addEventListener('visibilitychange', onVisibilityChange)
 
     const keepalive = setInterval(() => send(true), HEARTBEAT_MS)
     send(true)
@@ -76,7 +67,6 @@ export function useCursorBroadcast(editor: Editor | null, identity: Identity) {
       container.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pagehide', onPageHide)
       window.removeEventListener('beforeunload', onPageHide)
-      document.removeEventListener('visibilitychange', onVisibilityChange)
       clearInterval(keepalive)
       void leave({ sessionId: identity.sessionId })
     }

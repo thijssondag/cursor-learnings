@@ -11,9 +11,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
-import { DeleteConfirmModal } from '../components/DeleteConfirmModal'
+import { DeleteNoteButton } from '../components/DeleteConfirmModal'
+import { SocialIcons } from '../components/SocialIcons'
+import { useRequestDelete } from '../context/DeleteContext'
 import { useIdentity } from '../context/IdentityContext'
-import { setEditingNoteId } from '../lib/editingState'
+import {
+  consumeFocusRequest,
+  setEditingNoteId,
+} from '../lib/editingState'
 import { throttle } from '../lib/throttle'
 
 export interface TipProps {
@@ -23,6 +28,8 @@ export interface TipProps {
   text: string
   color: string
   authorName: string
+  authorXHandle: string
+  authorLinkedInUrl: string
   heartCount: number
   likedByMe: boolean
   isOwner: boolean
@@ -46,6 +53,8 @@ export class NoteShapeUtil extends ShapeUtil<NoteShape> {
     text: T.string,
     color: T.string,
     authorName: T.string,
+    authorXHandle: T.string,
+    authorLinkedInUrl: T.string,
     heartCount: T.number,
     likedByMe: T.boolean,
     isOwner: T.boolean,
@@ -59,6 +68,8 @@ export class NoteShapeUtil extends ShapeUtil<NoteShape> {
       text: '',
       color: '#34d399',
       authorName: '',
+      authorXHandle: '',
+      authorLinkedInUrl: '',
       heartCount: 0,
       likedByMe: false,
       isOwner: false,
@@ -90,22 +101,44 @@ export class NoteShapeUtil extends ShapeUtil<NoteShape> {
 }
 
 function NoteCard({ shape }: { shape: NoteShape }) {
-  const { w, h, text, authorName, heartCount, likedByMe, isOwner, noteId } =
-    shape.props
+  const {
+    w,
+    h,
+    text,
+    authorName,
+    authorXHandle,
+    authorLinkedInUrl,
+    heartCount,
+    likedByMe,
+    isOwner,
+    noteId,
+  } = shape.props
   const identity = useIdentity()
+  const requestDelete = useRequestDelete()
   const toggleHeart = useMutation(api.hearts.toggle)
   const updateNote = useMutation(api.notes.update)
-  const removeNote = useMutation(api.notes.remove)
 
   const [draft, setDraft] = useState(text)
-  const [pendingDelete, setPendingDelete] = useState(false)
+  const [heartAnimating, setHeartAnimating] = useState(false)
   const isFocused = useRef(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const displayName = isOwner ? identity.name : authorName
+  const displayXHandle = isOwner ? identity.xHandle : authorXHandle || undefined
+  const displayLinkedIn = isOwner
+    ? identity.linkedInUrl
+    : authorLinkedInUrl || undefined
 
   useEffect(() => {
     if (!isFocused.current) setDraft(text)
   }, [text])
+
+  useEffect(() => {
+    if (!isOwner || !textareaRef.current) return
+    if (consumeFocusRequest(noteId)) {
+      textareaRef.current.focus()
+    }
+  }, [isOwner, noteId])
 
   const persistText = useMemo(
     () =>
@@ -120,6 +153,21 @@ function NoteCard({ shape }: { shape: NoteShape }) {
   )
 
   const stop = (e: React.PointerEvent | React.MouseEvent) => e.stopPropagation()
+
+  const blockForeignInteraction = (e: React.PointerEvent | React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+  }
+
+  const handleHeartClick = (e: React.MouseEvent) => {
+    stop(e)
+    setHeartAnimating(true)
+    window.setTimeout(() => setHeartAnimating(false), 250)
+    void toggleHeart({
+      noteId: noteId as Id<'notes'>,
+      sessionId: identity.sessionId,
+    })
+  }
 
   return (
     <>
@@ -145,7 +193,6 @@ function NoteCard({ shape }: { shape: NoteShape }) {
             fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
           }}
         >
-          {/* Drag handle — pointer events pass through to tldraw */}
           <div
             title="Drag to move"
             style={{
@@ -176,10 +223,12 @@ function NoteCard({ shape }: { shape: NoteShape }) {
               display: 'flex',
               flexDirection: 'column',
               minHeight: 0,
+              position: 'relative',
             }}
           >
             {isOwner ? (
               <textarea
+                ref={textareaRef}
                 value={draft}
                 onChange={(e) => {
                   setDraft(e.target.value)
@@ -215,18 +264,32 @@ function NoteCard({ shape }: { shape: NoteShape }) {
                 }}
               />
             ) : (
-              <div
-                style={{
-                  flex: 1,
-                  color: '#000000',
-                  fontSize: 14,
-                  lineHeight: 1.4,
-                  whiteSpace: 'pre-wrap',
-                  overflow: 'hidden',
-                }}
-              >
-                {text}
-              </div>
+              <>
+                <div
+                  style={{
+                    flex: 1,
+                    color: '#000000',
+                    fontSize: 14,
+                    lineHeight: 1.4,
+                    whiteSpace: 'pre-wrap',
+                    overflow: 'hidden',
+                    userSelect: 'none',
+                  }}
+                >
+                  {text}
+                </div>
+                <div
+                  aria-hidden
+                  onPointerDown={blockForeignInteraction}
+                  onDoubleClick={blockForeignInteraction}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    cursor: 'default',
+                    pointerEvents: 'auto',
+                  }}
+                />
+              </>
             )}
           </div>
 
@@ -240,58 +303,52 @@ function NoteCard({ shape }: { shape: NoteShape }) {
               padding: '8px 14px 12px',
             }}
           >
-            <span
+            <div
               style={{
-                color: '#777169',
-                fontSize: 12,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                minWidth: 0,
+                flex: 1,
+                pointerEvents: 'auto',
               }}
+              onPointerDown={stop}
             >
-              — {displayName}
-            </span>
+              <span
+                style={{
+                  color: '#777169',
+                  fontSize: 12,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                — {displayName}
+              </span>
+              <SocialIcons
+                name={displayName}
+                xHandle={displayXHandle}
+                linkedInUrl={displayLinkedIn}
+              />
+            </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               {isOwner && (
-                <button
-                  title="Delete note"
-                  onPointerDown={stop}
-                  onClick={(e) => {
-                    stop(e)
-                    setPendingDelete(true)
+                <DeleteNoteButton
+                  onClick={() => {
+                    if (noteId) requestDelete(noteId)
                   }}
-                  style={{
-                    border: 'none',
-                    background: 'transparent',
-                    color: '#b1b0b0',
-                    cursor: 'pointer',
-                    fontSize: 16,
-                    lineHeight: 1,
-                    padding: '4px 6px',
-                    borderRadius: 8,
-                    pointerEvents: 'auto',
-                    minHeight: 32,
-                    minWidth: 32,
-                  }}
-                >
-                  ×
-                </button>
+                />
               )}
               <button
+                type="button"
+                className="heart-btn"
                 onPointerDown={stop}
-                onClick={(e) => {
-                  stop(e)
-                  void toggleHeart({
-                    noteId: noteId as Id<'notes'>,
-                    sessionId: identity.sessionId,
-                  })
-                }}
+                onClick={handleHeartClick}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 5,
-                  minHeight: 32,
+                  minHeight: 36,
                   padding: '4px 8px',
                   border: 'none',
                   background: 'transparent',
@@ -303,7 +360,12 @@ function NoteCard({ shape }: { shape: NoteShape }) {
                   pointerEvents: 'auto',
                 }}
               >
-                <span style={{ fontSize: 15 }}>{likedByMe ? '♥' : '♡'}</span>
+                <span
+                  className={heartAnimating ? 'heart-pop' : undefined}
+                  style={{ fontSize: 15, display: 'inline-block' }}
+                >
+                  {likedByMe ? '♥' : '♡'}
+                </span>
                 <span>{heartCount}</span>
               </button>
             </div>
@@ -311,18 +373,6 @@ function NoteCard({ shape }: { shape: NoteShape }) {
         </div>
       </HTMLContainer>
 
-      {pendingDelete && (
-        <DeleteConfirmModal
-          onCancel={() => setPendingDelete(false)}
-          onConfirm={() => {
-            setPendingDelete(false)
-            void removeNote({
-              noteId: noteId as Id<'notes'>,
-              sessionId: identity.sessionId,
-            })
-          }}
-        />
-      )}
     </>
   )
 }

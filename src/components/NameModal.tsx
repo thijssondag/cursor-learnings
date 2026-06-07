@@ -1,12 +1,45 @@
 import { useState } from 'react'
+import type { SocialProfileInput } from '../lib/identity'
 
-export function NameModal({ onJoin }: { onJoin: (name: string) => void }) {
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  boxSizing: 'border-box',
+  background: '#ffffff',
+  border: '1px solid #e5e5e5',
+  borderRadius: 4,
+  padding: '12px 14px',
+  fontSize: 14,
+  fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+  color: '#000000',
+  outline: 'none',
+  minHeight: 44,
+}
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: '#777169',
+  marginBottom: 6,
+  display: 'block',
+}
+
+export function NameModal({
+  onJoin,
+}: {
+  onJoin: (name: string, social: SocialProfileInput) => void
+}) {
   const [name, setName] = useState('')
+  const [xHandle, setXHandle] = useState('')
+  const [linkedInUrl, setLinkedInUrl] = useState('')
   const canJoin = name.trim().length > 0
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (canJoin) onJoin(name)
+    if (canJoin) {
+      onJoin(name, {
+        xHandle: xHandle || undefined,
+        linkedInUrl: linkedInUrl || undefined,
+      })
+    }
   }
 
   return (
@@ -33,7 +66,7 @@ export function NameModal({ onJoin }: { onJoin: (name: string) => void }) {
           padding: 28,
           display: 'flex',
           flexDirection: 'column',
-          gap: 20,
+          gap: 16,
         }}
       >
         <h1
@@ -53,26 +86,48 @@ export function NameModal({ onJoin }: { onJoin: (name: string) => void }) {
           Learnings Board
         </h1>
 
-        <input
-          autoFocus
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Enter your name"
-          maxLength={32}
-          style={{
-            width: '100%',
-            boxSizing: 'border-box',
-            background: '#ffffff',
-            border: '1px solid #e5e5e5',
-            borderRadius: 4,
-            padding: '12px 14px',
-            fontSize: 14,
-            fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-            color: '#000000',
-            outline: 'none',
-            minHeight: 44,
-          }}
-        />
+        <div>
+          <label htmlFor="join-name" style={labelStyle}>
+            Your name
+          </label>
+          <input
+            id="join-name"
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Enter your name"
+            maxLength={32}
+            style={inputStyle}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="join-x" style={labelStyle}>
+            X handle <span style={{ color: '#b1b0b0' }}>(optional)</span>
+          </label>
+          <input
+            id="join-x"
+            value={xHandle}
+            onChange={(e) => setXHandle(e.target.value)}
+            placeholder="@username"
+            maxLength={32}
+            style={inputStyle}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="join-linkedin" style={labelStyle}>
+            LinkedIn URL <span style={{ color: '#b1b0b0' }}>(optional)</span>
+          </label>
+          <input
+            id="join-linkedin"
+            value={linkedInUrl}
+            onChange={(e) => setLinkedInUrl(e.target.value)}
+            placeholder="https://linkedin.com/in/…"
+            maxLength={200}
+            style={inputStyle}
+          />
+        </div>
 
         <button
           type="submit"
@@ -90,6 +145,7 @@ export function NameModal({ onJoin }: { onJoin: (name: string) => void }) {
             fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
             cursor: canJoin ? 'pointer' : 'not-allowed',
             opacity: canJoin ? 1 : 0.5,
+            marginTop: 4,
           }}
         >
           Join board
