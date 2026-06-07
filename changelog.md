@@ -2,6 +2,14 @@
 
 All notable changes to the Cursor Learnings Board are documented here.
 
+## [0.0.2] — 2026-06-07
+
+Cursor watermark link fix (by Thijs / agent).
+
+### Fixed
+
+- **Cursor logo:** Moved to a fixed overlay so clicks open [cursor.com](https://cursor.com) in a new tab (was blocked by the tldraw canvas layer).
+
 ## [0.0.1] — 2026-06-07
 
 Live deploy marker (by Thijs / agent).

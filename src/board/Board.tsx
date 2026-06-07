@@ -31,6 +31,7 @@ import { boardUiOverrides } from './boardUiOverrides'
 import { TopBar } from '../components/TopBar'
 import { RemoteCursors } from '../components/RemoteCursors'
 import { CursorBoardBackground } from '../components/CursorBoardBackground'
+import { CursorWatermark } from '../components/CursorWatermark'
 import { ProfileModal } from '../components/ProfileModal'
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal'
 
@@ -135,6 +136,7 @@ export function Board({
                 onEditProfile={() => setShowProfile(true)}
                 setEditor={setEditor}
               />
+              <CursorWatermark />
               {editor && <RemoteCursors editor={editor} />}
             </div>
 
