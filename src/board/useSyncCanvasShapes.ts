@@ -37,12 +37,15 @@ function remoteToken(d: ConvexCanvasShape) {
   return `${d.updatedAt}:${d.data}`
 }
 
-function snapshotVersion(shapes: ConvexCanvasShape[]) {
-  if (shapes.length === 0) return ''
-  return shapes
-    .map((d) => `${d.shapeId}:${d.updatedAt}`)
-    .sort()
-    .join('|')
+function snapshotVersion(pageId: Id<'pages'>, shapes: ConvexCanvasShape[]) {
+  const body =
+    shapes.length === 0
+      ? ''
+      : shapes
+          .map((d) => `${d.shapeId}:${d.updatedAt}`)
+          .sort()
+          .join('|')
+  return `${pageId}|${body}`
 }
 
 /**
@@ -58,17 +61,13 @@ export function useSyncCanvasShapes(editor: Editor | null) {
   const removeShape = useMutation(api.drawings.remove)
 
   const isApplyingRemoteRef = useRef(false)
-  const hasHydratedRef = useRef(false)
+  const previousPageIdRef = useRef<Id<'pages'> | null>(null)
   const lastPayloadRef = useRef(new Map<string, string>())
   const lastAppliedRemoteRef = useRef(new Map<string, string>())
   const lastRemoteVersionRef = useRef('')
   const lastDrawShapeRef = useRef<TLShape | null>(null)
   const persistDrawRef = useRef<((shape: TLShape) => void) | null>(null)
   const persistStaticRef = useRef<((shape: TLShape) => void) | null>(null)
-
-  useEffect(() => {
-    if (shapes !== undefined) hasHydratedRef.current = true
-  }, [shapes])
 
   const upsertNow = useCallback(
     (shape: TLShape) => {
@@ -116,15 +115,31 @@ export function useSyncCanvasShapes(editor: Editor | null) {
     }
   }, [])
 
+  // Wipe local canvas shapes when switching Convex pages (do not delete from Convex).
+  useEffect(() => {
+    if (!editor || !currentPageId) return
+
+    const previousPageId = previousPageIdRef.current
+    previousPageIdRef.current = currentPageId
+
+    if (previousPageId === null || previousPageId === currentPageId) return
+
+    isApplyingRemoteRef.current = true
+    deleteLocalCanvasShapes(editor)
+    lastPayloadRef.current.clear()
+    lastAppliedRemoteRef.current.clear()
+    lastRemoteVersionRef.current = ''
+    lastDrawShapeRef.current = null
+    isApplyingRemoteRef.current = false
+  }, [editor, currentPageId])
+
   // Convex -> tldraw (incremental: skip unchanged remote rows)
   useEffect(() => {
     if (!editor || shapes === undefined || !currentPageId) return
 
     const remoteShapes = shapes as ConvexCanvasShape[]
-    const version = snapshotVersion(remoteShapes)
-    if (version === lastRemoteVersionRef.current && hasHydratedRef.current) {
-      return
-    }
+    const version = snapshotVersion(currentPageId, remoteShapes)
+    if (version === lastRemoteVersionRef.current) return
     lastRemoteVersionRef.current = version
 
     isApplyingRemoteRef.current = true
@@ -180,23 +195,15 @@ export function useSyncCanvasShapes(editor: Editor | null) {
         }
       }
 
-      if (hasHydratedRef.current) {
-        for (const s of existing) {
-          if (!remoteIds.has(s.id)) {
-            lastAppliedRemoteRef.current.delete(s.id)
-            editor.deleteShape(s.id)
-          }
+      for (const s of existing) {
+        if (!remoteIds.has(s.id)) {
+          lastAppliedRemoteRef.current.delete(s.id)
+          editor.deleteShape(s.id)
         }
       }
     })
     isApplyingRemoteRef.current = false
   }, [editor, shapes, currentPageId])
-
-  useEffect(() => {
-    lastAppliedRemoteRef.current.clear()
-    lastRemoteVersionRef.current = ''
-    hasHydratedRef.current = false
-  }, [currentPageId])
 
   // tldraw -> Convex
   useEffect(() => {

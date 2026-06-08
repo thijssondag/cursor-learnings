@@ -2,6 +2,14 @@
 
 All notable changes to the Cursor Learnings Board are documented here.
 
+## [0.0.3] — 2026-06-07
+
+Fix drawings appearing on every page (by Thijs / agent).
+
+### Fixed
+
+- **Per-page canvas:** Switching pages now clears local tldraw shapes and hydrates only that page's drawings from Convex. Fixes shared smiley/drawings showing on Logiland and other pages.
+
 ## [0.0.2] — 2026-06-07
 
 Cursor watermark link fix (by Thijs / agent).
