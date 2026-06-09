@@ -267,3 +267,27 @@ export function deleteLocalCanvasShapes(editor: Editor) {
     .map((s) => s.id)
   if (ids.length > 0) editor.deleteShapes(ids)
 }
+
+const CANVAS_FADE_MS = 200
+
+export async function fadeOutAndDeleteLocalCanvasShapes(editor: Editor): Promise<void> {
+  const shapes = editor.getCurrentPageShapes().filter((s) => isCanvasShape(s))
+  if (shapes.length === 0) return
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (reduced) {
+    deleteLocalCanvasShapes(editor)
+    return
+  }
+
+  editor.updateShapes(
+    shapes.map((s) => ({
+      id: s.id,
+      type: s.type,
+      opacity: 0,
+    })),
+  )
+
+  await new Promise((resolve) => window.setTimeout(resolve, CANVAS_FADE_MS))
+  deleteLocalCanvasShapes(editor)
+}

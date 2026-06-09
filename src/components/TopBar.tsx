@@ -1,5 +1,7 @@
+import { motion, useReducedMotion } from 'motion/react'
 import { usePresenceContext } from '../context/PresenceContext'
 import { PageMenu } from './PageMenu'
+import { DURATION_INSTANT, EASE_OUT_QUINT } from '../lib/motion'
 
 const pillBtnBase: React.CSSProperties = {
   pointerEvents: 'auto',
@@ -16,6 +18,36 @@ const pillBtnBase: React.CSSProperties = {
   cursor: 'pointer',
   boxShadow:
     'rgba(0,0,0,0.06) 0px 0px 0px 1px, rgba(0,0,0,0.04) 0px 1px 2px, rgba(0,0,0,0.04) 0px 2px 4px',
+}
+
+function PillButton({
+  children,
+  onClick,
+  disabled,
+  title,
+  style,
+}: {
+  children: React.ReactNode
+  onClick?: () => void
+  disabled?: boolean
+  title?: string
+  style: React.CSSProperties
+}) {
+  const reduceMotion = useReducedMotion()
+
+  return (
+    <motion.button
+      type="button"
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      title={title}
+      style={style}
+      whileTap={reduceMotion || disabled ? undefined : { scale: 0.97 }}
+      transition={{ duration: DURATION_INSTANT, ease: EASE_OUT_QUINT }}
+    >
+      {children}
+    </motion.button>
+  )
 }
 
 export function TopBar({
@@ -100,8 +132,7 @@ export function TopBar({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto' }}>
-        <button
-          type="button"
+        <PillButton
           onClick={onClearDrawings}
           style={{
             ...pillBtnBase,
@@ -111,10 +142,9 @@ export function TopBar({
           }}
         >
           Clear canvas
-        </button>
-        <button
-          type="button"
-          onClick={canAddNote ? onAddNote : undefined}
+        </PillButton>
+        <PillButton
+          onClick={onAddNote}
           disabled={!canAddNote}
           title={!canAddNote ? addNoteHint : undefined}
           style={{
@@ -128,7 +158,7 @@ export function TopBar({
         >
           <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
           <span>Add note</span>
-        </button>
+        </PillButton>
       </div>
     </div>
   )

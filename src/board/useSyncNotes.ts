@@ -10,6 +10,8 @@ import {
   clearDraggingNotes,
   getEditingNoteId,
   isNoteDragging,
+  isNoteJustCreated,
+  markRemoteNoteAppear,
   setNoteDragging,
 } from '../lib/editingState'
 import type { NoteShape } from './NoteShapeUtil'
@@ -64,6 +66,9 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
       for (const n of notes as ConvexNote[]) {
         const shape = shapeByNoteId.get(n._id)
         if (!shape) {
+          if (!isNoteJustCreated(n._id)) {
+            markRemoteNoteAppear(n._id)
+          }
           editor.createShape<NoteShape>({
             id: createShapeId(),
             type: 'tip',

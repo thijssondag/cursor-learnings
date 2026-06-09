@@ -1,6 +1,11 @@
 import { useState } from 'react'
-import { createPortal } from 'react-dom'
 import type { Identity } from '../lib/identity'
+import { Modal } from './Modal'
+import {
+  modalCancelBtnStyle,
+  modalPrimaryBtnStyle,
+  modalTitleStyle,
+} from './modalStyles'
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -24,10 +29,12 @@ const labelStyle: React.CSSProperties = {
 }
 
 export function ProfileModal({
+  open,
   identity,
   onSave,
   onClose,
 }: {
+  open: boolean
   identity: Identity
   onSave: (updates: {
     name: string
@@ -47,55 +54,20 @@ export function ProfileModal({
     onSave({ name, xHandle, linkedInUrl })
   }
 
-  return createPortal(
-    <div
-      className="modal-backdrop-enter"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 20000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-        background: 'rgba(0, 0, 0, 0.15)',
-      }}
-      onClick={onClose}
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      titleId="profile-title"
+      as="form"
+      onSubmit={submit}
+      maxWidth={360}
     >
-      <form
-        role="dialog"
-        aria-labelledby="profile-title"
-        aria-modal="true"
-        className="modal-card-enter"
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={submit}
-        style={{
-          width: '100%',
-          maxWidth: 360,
-          background: '#ffffff',
-          border: '1px solid #e5e5e5',
-          borderRadius: 16,
-          boxShadow: '0 0 1px 0 rgba(0,0,0,0.4), 0 4px 12px 0 rgba(0,0,0,0.06)',
-          padding: 28,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-        }}
-      >
-        <h2
-          id="profile-title"
-          style={{
-            margin: 0,
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontWeight: 500,
-            fontSize: 24,
-            lineHeight: 1.2,
-            color: '#000000',
-          }}
-        >
-          Edit profile
-        </h2>
+      <h2 id="profile-title" style={{ ...modalTitleStyle, marginBottom: 0 }}>
+        Edit profile
+      </h2>
 
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
           <label htmlFor="profile-name" style={labelStyle}>
             Name
@@ -137,50 +109,24 @@ export function ProfileModal({
             style={inputStyle}
           />
         </div>
+      </div>
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              flex: 1,
-              background: '#ffffff',
-              color: '#000000',
-              border: '1px solid #e5e5e5',
-              borderRadius: 9999,
-              padding: '12px 16px',
-              minHeight: 44,
-              fontSize: 14,
-              fontWeight: 500,
-              fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-              cursor: 'pointer',
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={!canSave}
-            style={{
-              flex: 1,
-              background: '#000000',
-              color: '#fdfcfc',
-              border: 'none',
-              borderRadius: 9999,
-              padding: '12px 16px',
-              minHeight: 44,
-              fontSize: 14,
-              fontWeight: 500,
-              fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-              cursor: canSave ? 'pointer' : 'not-allowed',
-              opacity: canSave ? 1 : 0.5,
-            }}
-          >
-            Save
-          </button>
-        </div>
-      </form>
-    </div>,
-    document.body,
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button type="button" onClick={onClose} style={modalCancelBtnStyle}>
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={!canSave}
+          style={{
+            ...modalPrimaryBtnStyle,
+            cursor: canSave ? 'pointer' : 'not-allowed',
+            opacity: canSave ? 1 : 0.5,
+          }}
+        >
+          Save
+        </button>
+      </div>
+    </Modal>
   )
 }
