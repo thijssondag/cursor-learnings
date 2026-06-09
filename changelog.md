@@ -6,6 +6,10 @@ All notable changes to the Cursor Learnings Board are documented here.
 
 Fix newly created note not draggable (by Thijs / agent).
 
+### Changed
+
+- **Page menu:** Bumped displayed app version to v0.0.4.
+
 ### Fixed
 
 - **Note drag on create:** Removed auto-focus on the textarea after adding a note. The focused input was consuming the first pointer interaction on the drag header, so users had to click the canvas once before a note could move.
