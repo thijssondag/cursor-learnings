@@ -15,6 +15,7 @@ import {
   setEditingNoteId,
   setNoteDragging,
 } from '../lib/editingState'
+import { findNonOverlappingPosition } from '../lib/notePlacement'
 import type { NoteShape } from './NoteShapeUtil'
 
 type ConvexNote = {
@@ -168,10 +169,31 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
       void Promise.all(
         moves.map(async ([noteId, { x, y }]) => {
           try {
+            const others = Array.from(notesByIdRef.current.entries())
+              .filter(([id]) => id !== noteId)
+              .map(([, n]) => ({ x: n.x, y: n.y }))
+            const resolved = findNonOverlappingPosition({ x, y }, others)
+
+            if (resolved.x !== x || resolved.y !== y) {
+              const shape = editor
+                .getCurrentPageShapes()
+                .find(
+                  (s) => s.type === 'tip' && (s as unknown as NoteShape).props.noteId === noteId,
+                ) as unknown as NoteShape | undefined
+              if (shape) {
+                editor.updateShape<NoteShape>({
+                  id: shape.id,
+                  type: 'tip',
+                  x: resolved.x,
+                  y: resolved.y,
+                })
+              }
+            }
+
             await moveNote({
               noteId: noteId as Id<'notes'>,
-              x,
-              y,
+              x: resolved.x,
+              y: resolved.y,
             })
           } catch (err) {
             console.error('Failed to move note:', err)

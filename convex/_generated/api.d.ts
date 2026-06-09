@@ -11,6 +11,7 @@
 import type * as drawings from "../drawings.js";
 import type * as hearts from "../hearts.js";
 import type * as maintenance from "../maintenance.js";
+import type * as notePlacement from "../notePlacement.js";
 import type * as notes from "../notes.js";
 import type * as pages from "../pages.js";
 import type * as presence from "../presence.js";
@@ -26,6 +27,7 @@ declare const fullApi: ApiFromModules<{
   drawings: typeof drawings;
   hearts: typeof hearts;
   maintenance: typeof maintenance;
+  notePlacement: typeof notePlacement;
   notes: typeof notes;
   pages: typeof pages;
   presence: typeof presence;
