@@ -2,6 +2,14 @@
 
 All notable changes to the Cursor Learnings Board are documented here.
 
+## [0.0.4] — 2026-06-09
+
+Favicon update (by Thijs / agent).
+
+### Changed
+
+- **Favicon:** Replaced the custom purple bolt icon with the official Cursor favicons from [cursor.com](https://cursor.com) (dark + light SVG variants and `.ico` fallback).
+
 ## [0.0.3] — 2026-06-07
 
 Fix drawings appearing on every page (by Thijs / agent).
