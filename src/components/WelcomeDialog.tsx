@@ -2,9 +2,9 @@ import { type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { IconHeart, IconNote, IconPointer } from '@tabler/icons-react'
 import { motion, useReducedMotion } from 'motion/react'
-import { displayTitleStyle, modalBackdropStyle, primaryBtnStyle } from '../lib/uiStyles'
+import { displayTitleStyle, modalBackdropStyle } from '../lib/uiStyles'
 import { iconProps } from '../lib/iconProps'
-import { MotionButton } from './MotionButton'
+import { Button } from './Button'
 
 type FeatureId = 'tip' | 'heart' | 'cursors'
 
@@ -145,21 +145,19 @@ export function WelcomeDialog({
             ))}
           </motion.ul>
 
-          <MotionButton
+          <Button
             type="button"
+            color="primary"
+            size="md"
             autoFocus
             onClick={onContinue}
-            className="welcome-dialog__cta"
-            variants={fadeUp}
+            fullWidth
             style={{
-              ...primaryBtnStyle,
-              width: '100%',
-              cursor: 'pointer',
               willChange: reduceMotion ? undefined : 'opacity, transform',
             }}
           >
             Get started
-          </MotionButton>
+          </Button>
         </motion.div>
       </motion.div>
     </motion.div>,

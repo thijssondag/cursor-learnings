@@ -1,7 +1,7 @@
 import { usePresenceContext } from '../context/PresenceContext'
 import { PageMenu } from './PageMenu'
 import { ThemeToggle } from './ThemeToggle'
-import { MotionButton } from './MotionButton'
+import { Button } from './Button'
 
 export function TopBar({
   onAddNote,
@@ -39,25 +39,26 @@ export function TopBar({
             {onlineCount}
             <span className="top-bar__online-suffix"> online</span>
           </span>
-          <MotionButton
+          <Button
             type="button"
-            variant="ghost"
+            color="link-gray"
+            size="xs"
             onClick={onEditProfile}
             className="top-bar__edit-profile"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             Edit profile
-          </MotionButton>
+          </Button>
         </div>
 
         <div className="top-bar__actions">
           <ThemeToggle />
-          <MotionButton
+          <Button
             type="button"
+            color="secondary"
+            size="sm"
             onClick={onClearDrawings}
             aria-label="Clear drawings"
-            className="top-bar__btn top-bar__btn--secondary"
+            className="top-bar__action-btn"
           >
             <span className="top-bar__btn-label top-bar__btn-label--long" aria-hidden>
               Clear Drawings
@@ -65,14 +66,16 @@ export function TopBar({
             <span className="top-bar__btn-label top-bar__btn-label--short" aria-hidden>
               Clear
             </span>
-          </MotionButton>
-          <MotionButton
+          </Button>
+          <Button
             type="button"
+            color="primary"
+            size="sm"
             onClick={canAddNote ? onAddNote : undefined}
-            disabled={!canAddNote}
+            isDisabled={!canAddNote}
             title={canAddNote ? addNoteTitle : addNoteHint}
             aria-label={canAddNote ? addNoteTitle : addNoteHint}
-            className="top-bar__btn top-bar__btn--primary"
+            className="top-bar__action-btn top-bar__action-btn--primary"
           >
             <span className="top-bar__btn-icon" aria-hidden>
               +
@@ -86,7 +89,7 @@ export function TopBar({
             <span className="top-bar__btn-label top-bar__btn-label--short" aria-hidden>
               {addNoteShortLabel}
             </span>
-          </MotionButton>
+          </Button>
         </div>
       </div>
     </div>

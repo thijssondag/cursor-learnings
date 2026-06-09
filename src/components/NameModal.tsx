@@ -6,9 +6,8 @@ import {
   labelStyle,
   modalCardStyle,
   pageOverlayStyle,
-  primaryBtnStyle,
 } from '../lib/uiStyles'
-import { MotionButton } from './MotionButton'
+import { Button } from './Button'
 
 export function NameModal({
   onJoin,
@@ -91,19 +90,16 @@ export function NameModal({
           />
         </div>
 
-        <MotionButton
+        <Button
           type="submit"
-          disabled={!canJoin}
-          style={{
-            ...primaryBtnStyle,
-            width: '100%',
-            cursor: canJoin ? 'pointer' : 'not-allowed',
-            opacity: canJoin ? 1 : 0.5,
-            marginTop: 4,
-          }}
+          color="primary"
+          size="md"
+          isDisabled={!canJoin}
+          fullWidth
+          style={{ marginTop: 4 }}
         >
           Join board
-        </MotionButton>
+        </Button>
       </form>
     </div>
   )

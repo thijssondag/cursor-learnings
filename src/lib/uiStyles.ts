@@ -48,47 +48,6 @@ export const modalBodyStyle: CSSProperties = {
   fontFamily: 'var(--font-sans)',
 }
 
-export const pillBtnBase: CSSProperties = {
-  pointerEvents: 'auto',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 6,
-  borderRadius: 9999,
-  padding: '8px 16px',
-  minHeight: 40,
-  fontSize: 14,
-  fontWeight: 500,
-  fontFamily: 'var(--font-sans)',
-  whiteSpace: 'nowrap',
-  cursor: 'pointer',
-  boxShadow: 'var(--shadow-pill)',
-}
-
-export const primaryBtnStyle: CSSProperties = {
-  background: 'var(--color-btn-bg)',
-  color: 'var(--color-btn-text)',
-  border: 'none',
-  borderRadius: 9999,
-  padding: '12px 16px',
-  minHeight: 44,
-  fontSize: 14,
-  fontWeight: 500,
-  fontFamily: 'var(--font-sans)',
-}
-
-export const secondaryBtnStyle: CSSProperties = {
-  background: 'var(--color-surface)',
-  color: 'var(--color-text)',
-  border: '1px solid var(--color-border)',
-  borderRadius: 9999,
-  padding: '12px 16px',
-  minHeight: 44,
-  fontSize: 14,
-  fontWeight: 500,
-  fontFamily: 'var(--font-sans)',
-  cursor: 'pointer',
-}
-
 export const modalBackdropStyle: CSSProperties = {
   position: 'fixed',
   inset: 0,

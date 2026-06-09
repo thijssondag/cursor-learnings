@@ -6,6 +6,7 @@ import { usePageContext, type BoardPage } from '../context/PageContext'
 import { APP_VERSION } from '../lib/constants'
 import { iconProps } from '../lib/iconProps'
 import { inputStyle } from '../lib/uiStyles'
+import { Button } from './Button'
 import { MotionButton } from './MotionButton'
 
 export function PageMenu() {
@@ -268,25 +269,27 @@ export function PageMenu() {
                 }}
               />
               <div style={{ display: 'flex', gap: 6 }}>
-                <MotionButton type="button" onClick={() => void handleCreate()} style={menuBtnPrimaryStyle}>
+                <Button type="button" color="primary" size="sm" onClick={() => void handleCreate()} fullWidth>
                   Create
-                </MotionButton>
-                <MotionButton
+                </Button>
+                <Button
                   type="button"
+                  color="secondary"
+                  size="sm"
                   onClick={() => {
                     setCreating(false)
                     setNewPageName('')
                   }}
-                  style={menuBtnSecondaryStyle}
+                  fullWidth
                 >
                   Cancel
-                </MotionButton>
+                </Button>
               </div>
             </div>
           ) : (
-            <MotionButton type="button" onClick={() => setCreating(true)} style={menuItemStyle}>
+            <Button type="button" color="tertiary" size="sm" onClick={() => setCreating(true)} fullWidth className="page-menu__new-page">
               New page
-            </MotionButton>
+            </Button>
           )}
           <div
             aria-hidden
@@ -323,43 +326,4 @@ const iconBtnStyle: React.CSSProperties = {
   cursor: 'pointer',
   padding: 0,
   flexShrink: 0,
-}
-
-const menuItemStyle: React.CSSProperties = {
-  display: 'block',
-  width: '100%',
-  textAlign: 'left',
-  border: 'none',
-  background: 'transparent',
-  borderRadius: 8,
-  padding: '10px 12px',
-  fontSize: 14,
-  fontWeight: 500,
-  fontFamily: 'var(--font-sans)',
-  color: 'var(--color-text)',
-  cursor: 'pointer',
-}
-
-const menuBtnBase: React.CSSProperties = {
-  flex: 1,
-  borderRadius: 9999,
-  padding: '8px 10px',
-  fontSize: 13,
-  fontFamily: 'var(--font-sans)',
-  fontWeight: 500,
-  cursor: 'pointer',
-}
-
-const menuBtnPrimaryStyle: React.CSSProperties = {
-  ...menuBtnBase,
-  background: 'var(--color-btn-bg)',
-  color: 'var(--color-btn-text)',
-  border: 'none',
-}
-
-const menuBtnSecondaryStyle: React.CSSProperties = {
-  ...menuBtnBase,
-  background: 'var(--color-surface)',
-  color: 'var(--color-text)',
-  border: '1px solid var(--color-border)',
 }

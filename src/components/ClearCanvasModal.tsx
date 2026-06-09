@@ -1,10 +1,6 @@
 import { Modal } from './Modal'
-import {
-  modalBodyStyle,
-  modalCancelBtnStyle,
-  modalPrimaryBtnStyle,
-  modalTitleStyle,
-} from './modalStyles'
+import { Button } from './Button'
+import { displayTitleStyle, modalBodyStyle } from '../lib/uiStyles'
 
 export function ClearCanvasModal({
   open,
@@ -20,7 +16,15 @@ export function ClearCanvasModal({
   return (
     <Modal open={open} onClose={isClearing ? () => {} : onCancel} titleId="clear-canvas-title">
       <div>
-        <h2 id="clear-canvas-title" style={modalTitleStyle}>
+        <h2
+          id="clear-canvas-title"
+          style={{
+            ...displayTitleStyle,
+            margin: 0,
+            fontSize: 24,
+            lineHeight: 1.2,
+          }}
+        >
           Clear this page?
         </h2>
         <p style={modalBodyStyle}>
@@ -30,34 +34,32 @@ export function ClearCanvasModal({
       </div>
 
       <div style={{ display: 'flex', gap: 10 }}>
-        <button
+        <Button
           type="button"
+          color="secondary"
+          size="md"
           onClick={onCancel}
-          disabled={isClearing}
-          style={{
-            ...modalCancelBtnStyle,
-            opacity: isClearing ? 0.5 : 1,
-            cursor: isClearing ? 'not-allowed' : 'pointer',
-          }}
+          isDisabled={isClearing}
+          fullWidth
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          color="primary-destructive"
+          size="md"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation()
             if (!isClearing) onConfirm()
           }}
-          disabled={isClearing}
-          style={{
-            ...modalPrimaryBtnStyle,
-            opacity: isClearing ? 0.6 : 1,
-            cursor: isClearing ? 'wait' : 'pointer',
-          }}
+          isDisabled={isClearing}
+          isLoading={isClearing}
+          showTextWhileLoading
+          fullWidth
         >
           {isClearing ? 'Clearing…' : 'Clear drawings'}
-        </button>
+        </Button>
       </div>
     </Modal>
   )

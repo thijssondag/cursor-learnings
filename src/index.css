@@ -47,6 +47,18 @@
   --color-online: #34d399;
   --shadow-pill: rgba(0, 0, 0, 0.06) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 1px 2px,
     rgba(0, 0, 0, 0.04) 0px 2px 4px;
+  --color-btn-bg-hover: color-mix(in srgb, var(--color-btn-bg) 88%, white);
+  --color-btn-secondary-hover: color-mix(in srgb, var(--color-text) 4%, var(--color-surface));
+  --color-btn-tertiary-hover: color-mix(in srgb, var(--color-text) 6%, transparent);
+  --color-btn-error-hover: color-mix(in srgb, var(--color-error) 88%, black);
+  --shadow-btn-skeuo:
+    0 0 0 0 transparent, 0 0 0 0 transparent, 0 0 0 0 transparent,
+    0 0 0 1px inset transparent, 0 0 0 1px inset rgba(0, 0, 0, 0.18),
+    0 -2px 0 0 inset rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-btn-secondary-skeuo:
+    0 0 0 0 transparent, 0 0 0 0 transparent, 0 0 0 0 transparent,
+    0 0 0 1px inset var(--color-border), 0 0 0 1px inset rgba(0, 0, 0, 0.18),
+    0 -2px 0 0 inset rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 [data-theme='dark'] {
@@ -65,6 +77,18 @@
   --color-online: #34d399;
   --shadow-pill: rgba(247, 247, 244, 0.08) 0px 0px 0px 1px, rgba(0, 0, 0, 0.2) 0px 1px 2px,
     rgba(0, 0, 0, 0.15) 0px 2px 4px;
+  --color-btn-bg-hover: color-mix(in srgb, var(--color-btn-bg) 92%, black);
+  --color-btn-secondary-hover: color-mix(in srgb, var(--color-text) 6%, var(--color-surface));
+  --color-btn-tertiary-hover: color-mix(in srgb, var(--color-text) 8%, transparent);
+  --color-btn-error-hover: color-mix(in srgb, var(--color-error) 88%, white);
+  --shadow-btn-skeuo:
+    0 0 0 0 transparent, 0 0 0 0 transparent, 0 0 0 0 transparent,
+    0 0 0 1px inset transparent, 0 0 0 1px inset rgba(0, 0, 0, 0.28),
+    0 -2px 0 0 inset rgba(255, 255, 255, 0.06), 0 1px 2px 0 rgba(0, 0, 0, 0.24);
+  --shadow-btn-secondary-skeuo:
+    0 0 0 0 transparent, 0 0 0 0 transparent, 0 0 0 0 transparent,
+    0 0 0 1px inset var(--color-border), 0 0 0 1px inset rgba(0, 0, 0, 0.28),
+    0 -2px 0 0 inset rgba(255, 255, 255, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
 }
 
 html,
@@ -86,6 +110,294 @@ body {
 
 button {
   font-weight: 400;
+}
+
+/* Button system — Untitled UI-inspired, project tokens */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: none;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  pointer-events: auto;
+  transition:
+    background-color 100ms linear,
+    color 100ms linear,
+    box-shadow 100ms linear,
+    opacity 100ms linear;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.btn:disabled,
+.btn[data-loading] {
+  cursor: not-allowed;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+}
+
+.btn--full {
+  width: 100%;
+}
+
+.btn [data-icon]:not([data-icon='loading']) {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  pointer-events: none;
+  transition: opacity 100ms linear, color 100ms linear;
+}
+
+.btn--xs [data-icon]:not([data-icon='loading']) {
+  width: 1rem;
+  height: 1rem;
+}
+
+.btn--loading:not(.btn--loading-with-text) [data-text],
+.btn--loading:not(.btn--loading-with-text) [data-icon]:not([data-icon='loading']) {
+  visibility: hidden;
+}
+
+.btn--loading-with-text [data-icon]:not([data-icon='loading']) {
+  opacity: 0;
+}
+
+.btn__spinner {
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.65s linear infinite;
+  opacity: 0.85;
+}
+
+.btn--loading-with-text .btn__spinner {
+  position: static;
+  margin-right: 2px;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn--xs {
+  gap: 4px;
+  border-radius: 8px;
+  padding: 6px 10px;
+  min-height: 32px;
+  font-size: 13px;
+}
+
+.btn--sm {
+  gap: 4px;
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-height: 36px;
+  font-size: 14px;
+}
+
+.btn--md {
+  gap: 4px;
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-height: 40px;
+  font-size: 14px;
+}
+
+.btn--lg {
+  gap: 6px;
+  border-radius: 8px;
+  padding: 10px 16px;
+  min-height: 44px;
+  font-size: 15px;
+}
+
+.btn--xl {
+  gap: 6px;
+  border-radius: 8px;
+  padding: 12px 18px;
+  min-height: 48px;
+  font-size: 15px;
+}
+
+.btn--icon-only.btn--xs {
+  padding: 6px;
+  min-width: 32px;
+}
+
+.btn--icon-only.btn--sm {
+  padding: 8px;
+  min-width: 40px;
+}
+
+.btn--icon-only.btn--md {
+  padding: 10px;
+  min-width: 40px;
+}
+
+.btn--icon-only.btn--lg {
+  padding: 10px;
+  min-width: 44px;
+}
+
+.btn--icon-only.btn--xl {
+  padding: 12px;
+  min-width: 48px;
+}
+
+.btn--primary,
+.btn--primary-destructive {
+  box-shadow: var(--shadow-btn-skeuo);
+}
+
+.btn--primary {
+  background: var(--color-btn-bg);
+  color: var(--color-btn-text);
+}
+
+.btn--primary::before,
+.btn--primary-destructive::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, white 12%, transparent);
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+}
+
+.btn--primary [data-icon]:not([data-icon='loading']),
+.btn--primary-destructive [data-icon]:not([data-icon='loading']) {
+  opacity: 0.6;
+}
+
+.btn--primary:hover:not(:disabled) [data-icon]:not([data-icon='loading']),
+.btn--primary-destructive:hover:not(:disabled) [data-icon]:not([data-icon='loading']) {
+  opacity: 0.7;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--color-btn-bg-hover);
+}
+
+.btn--primary-destructive {
+  background: var(--color-error);
+  color: #ffffff;
+}
+
+.btn--primary-destructive:hover:not(:disabled) {
+  background: var(--color-btn-error-hover);
+}
+
+.btn--secondary,
+.btn--secondary-destructive {
+  background: var(--color-surface);
+  border: none;
+  box-shadow: var(--shadow-btn-secondary-skeuo);
+}
+
+.btn--secondary {
+  color: var(--color-text);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--color-btn-secondary-hover);
+}
+
+.btn--secondary-destructive {
+  color: var(--color-error);
+  box-shadow:
+    0 0 0 0 transparent, 0 0 0 0 transparent, 0 0 0 0 transparent,
+    0 0 0 1px inset color-mix(in srgb, var(--color-error) 32%, var(--color-border)),
+    0 0 0 1px inset rgba(0, 0, 0, 0.18), 0 -2px 0 0 inset rgba(0, 0, 0, 0.05),
+    0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.btn--secondary-destructive:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-error) 8%, var(--color-surface));
+}
+
+.btn--tertiary,
+.btn--tertiary-destructive {
+  background: transparent;
+}
+
+.btn--tertiary {
+  color: var(--color-text-muted);
+}
+
+.btn--tertiary:hover:not(:disabled) {
+  background: var(--color-btn-tertiary-hover);
+  color: var(--color-text);
+}
+
+.btn--tertiary-destructive {
+  color: var(--color-error);
+}
+
+.btn--tertiary-destructive:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-error) 10%, transparent);
+}
+
+.btn--link-color,
+.btn--link-gray {
+  justify-content: flex-start;
+  gap: 4px;
+  min-height: auto;
+  padding: 0;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  font-weight: 500;
+}
+
+.btn--link-color {
+  color: var(--color-accent);
+}
+
+.btn--link-color [data-text] {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: transparent;
+}
+
+.btn--link-color:hover:not(:disabled) [data-text] {
+  text-decoration-color: currentColor;
+}
+
+.btn--link-gray {
+  color: var(--color-text-muted);
+}
+
+.btn--link-gray [data-text] {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: transparent;
+}
+
+.btn--link-gray:hover:not(:disabled) {
+  color: var(--color-text);
+}
+
+.btn--link-gray:hover:not(:disabled) [data-text] {
+  text-decoration-color: var(--color-text-faint);
 }
 
 /* Make tldraw's canvas blend with the page background */
@@ -390,6 +702,13 @@ button {
   z-index: 400;
 }
 
+.page-menu__new-page {
+  justify-content: flex-start;
+  width: 100%;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
 .top-bar__meta {
   display: flex;
   align-items: center;
@@ -424,19 +743,30 @@ button {
   min-height: 44px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--color-text-faint);
   cursor: pointer;
   font-family: var(--font-sans);
-  text-decoration: underline;
-  text-underline-offset: 2px;
   white-space: nowrap;
-  transition: color 150ms ease;
   display: inline-flex;
   align-items: center;
 }
 
-.top-bar__edit-profile:hover {
-  color: var(--color-accent);
+.top-bar__btn-label {
+  font-weight: inherit;
+  line-height: 20px;
+}
+
+.top-bar__btn-limit {
+  opacity: 0.72;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.top-bar__btn-label--short {
+  display: none;
+}
+
+.theme-toggle__label {
+  white-space: nowrap;
 }
 
 .top-bar__actions {
@@ -448,59 +778,10 @@ button {
   pointer-events: auto;
 }
 
-.top-bar__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-radius: var(--radius-pill);
-  padding: 8px 16px;
-  min-height: 40px;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: var(--font-sans);
-  white-space: nowrap;
-  cursor: pointer;
-  box-shadow: var(--shadow-pill);
-}
-
-.top-bar__btn--secondary {
-  background: var(--color-surface);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-}
-
-.top-bar__btn--primary {
-  background: var(--color-btn-bg);
-  color: var(--color-btn-text);
-  border: 1px solid var(--color-border);
-}
-
-.top-bar__btn--primary:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}
-
 .top-bar__btn-icon {
   font-size: 16px;
   line-height: 1;
-}
-
-.top-bar__btn-limit {
-  opacity: 0.72;
-  font-size: 12px;
-}
-
-.top-bar__btn-label--short {
-  display: none;
-}
-
-.theme-toggle__label {
-  white-space: nowrap;
-}
-
-.theme-toggle {
-  color: var(--color-text-muted);
+  font-weight: 500;
 }
 
 @media (max-width: 639px) {
@@ -547,11 +828,9 @@ button {
     font-size: 11px;
   }
 
-  .top-bar__btn,
-  .theme-toggle {
+  .btn.top-bar__action-btn {
     padding: 8px 10px;
-    min-height: 44px;
-    font-size: 13px;
+    min-height: 36px;
   }
 
   .top-bar__btn-label--long {
@@ -576,11 +855,11 @@ button {
     max-width: min(120px, calc(100vw - 200px));
   }
 
-  .top-bar__btn {
+  .btn.top-bar__action-btn {
     padding: 8px;
   }
 
-  .top-bar__btn--primary .top-bar__btn-label--short {
+  .top-bar__action-btn--primary .top-bar__btn-label--short {
     display: none;
   }
 }
@@ -613,6 +892,10 @@ button {
 
 @media (prefers-reduced-motion: reduce) {
   .heart-pop {
+    animation: none;
+  }
+
+  .btn__spinner {
     animation: none;
   }
 

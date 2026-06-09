@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from 'react'
 import { useMutation } from 'convex/react'
 import { api } from '../convex/_generated/api'
 import { BoardLoading } from './components/BoardLoading'
+import { ButtonShowcase } from './components/ButtonShowcase'
 import { NameModal } from './components/NameModal'
 import { createIdentity, getStoredIdentity, type Identity } from './lib/identity'
 
@@ -14,6 +15,10 @@ function App() {
     getStoredIdentity(),
   )
   const upsertProfile = useMutation(api.profiles.upsert)
+
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('button-compare')) {
+    return <ButtonShowcase />
+  }
 
   const handleJoin = async (
     name: string,
