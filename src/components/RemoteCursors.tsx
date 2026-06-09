@@ -1,4 +1,5 @@
 import { useValue, type Editor } from 'tldraw'
+import { IconPointerFilled } from '@tabler/icons-react'
 import { usePresenceContext, type PresenceUser } from '../context/PresenceContext'
 
 export function RemoteCursors({ editor }: { editor: Editor }) {
@@ -52,25 +53,15 @@ function RemoteCursorDot({
         willChange: 'transform',
       }}
     >
-      <svg
-        width="25"
-        height="25"
-        viewBox="0 0 20 20"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
+      <IconPointerFilled
+        size={20}
+        color={user.color}
+        aria-hidden
         style={{
           display: 'block',
           filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))',
         }}
-      >
-        <path
-          d="M3 3L3 17L8 12L13 12L3 3Z"
-          fill={user.color}
-          stroke="#ffffff"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-      </svg>
+      />
       <div
         style={{
           position: 'absolute',
@@ -80,9 +71,9 @@ function RemoteCursorDot({
           borderRadius: 9999,
           padding: '3px 8px',
           fontSize: 12,
-          fontWeight: 500,
-          fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-          color: '#000000',
+          fontWeight: 400,
+          fontFamily: 'var(--font-sans)',
+          color: '#26251e',
           backgroundColor: user.color,
           boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
         }}

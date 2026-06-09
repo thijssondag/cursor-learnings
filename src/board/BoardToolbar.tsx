@@ -29,9 +29,11 @@ import {
   XBoxToolbarItem,
 } from 'tldraw'
 import { useBoardActions } from '../context/BoardActionsContext'
+import { useToolbarAppearAnimation } from './useToolbarAppearAnimation'
 
 export function BoardToolbar() {
   const { onAddNote, canAddNote } = useBoardActions()
+  useToolbarAppearAnimation()
 
   return (
     <DefaultToolbar>
@@ -41,7 +43,7 @@ export function BoardToolbar() {
       <EraserToolbarItem />
       <TldrawUiMenuItem
         id="add-tip-note"
-        label="Add note"
+        label="Add your tip (1 per person)"
         icon="tool-note"
         kbd="n"
         onSelect={() => {

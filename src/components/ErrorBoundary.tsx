@@ -28,9 +28,9 @@ export class ErrorBoundary extends Component<Props, State> {
             display: 'grid',
             placeItems: 'center',
             padding: 24,
-            fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-            color: '#000',
-            background: '#fdfcfc',
+            fontFamily: 'var(--font-sans)',
+            color: 'var(--color-text)',
+            background: 'var(--color-bg)',
           }}
         >
           <p style={{ maxWidth: 480, textAlign: 'center', lineHeight: 1.5 }}>

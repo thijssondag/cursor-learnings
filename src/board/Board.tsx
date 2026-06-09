@@ -14,10 +14,12 @@ import { PresenceProvider } from '../context/PresenceContext'
 import { DeleteProvider } from '../context/DeleteContext'
 import { PageProvider, usePageContext } from '../context/PageContext'
 import { BoardActionsProvider } from '../context/BoardActionsContext'
+import { useTheme } from '../context/ThemeContext'
 import type { Identity } from '../lib/identity'
 import { NOTE_HEIGHT, NOTE_WIDTH, randomTilt } from '../lib/constants'
+import { DEFAULT_NOTE_COLOR } from '../lib/noteColors'
 import {
-  hasUnfinishedOwnedNote,
+  getAddNoteAvailability,
   requestNoteFocus,
   useEditingNoteId,
 } from '../lib/editingState'
@@ -31,9 +33,10 @@ import { boardUiOverrides } from './boardUiOverrides'
 import { TopBar } from '../components/TopBar'
 import { RemoteCursors } from '../components/RemoteCursors'
 import { CursorBoardBackground } from '../components/CursorBoardBackground'
-import { CursorWatermark } from '../components/CursorWatermark'
 import { ProfileModal } from '../components/ProfileModal'
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal'
+import { WelcomeDialog } from '../components/WelcomeDialog'
+import { hasSeenWelcome, markWelcomeSeen } from '../lib/welcome'
 
 const shapeUtils = [NoteShapeUtil]
 
@@ -76,10 +79,11 @@ export function Board({
   const [editor, setEditor] = useState<Editor | null>(null)
   const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null)
   const [showProfile, setShowProfile] = useState(false)
+  const [showWelcome, setShowWelcome] = useState(() => !hasSeenWelcome())
   const removeNote = useMutation(api.notes.remove)
   const upsertProfile = useMutation(api.profiles.upsert)
 
-  const overlayOpen = deleteNoteId !== null || showProfile
+  const overlayOpen = deleteNoteId !== null || showProfile || showWelcome
 
   const handleConfirmDelete = async () => {
     if (!deleteNoteId) return
@@ -136,7 +140,6 @@ export function Board({
                 onEditProfile={() => setShowProfile(true)}
                 setEditor={setEditor}
               />
-              <CursorWatermark />
               {editor && <RemoteCursors editor={editor} />}
             </div>
 
@@ -151,6 +154,15 @@ export function Board({
                 identity={identity}
                 onSave={(updates) => void handleProfileSave(updates)}
                 onClose={() => setShowProfile(false)}
+              />
+            )}
+            {showWelcome && (
+              <WelcomeDialog
+                name={identity.name}
+                onContinue={() => {
+                  markWelcomeSeen()
+                  setShowWelcome(false)
+                }}
               />
             )}
           </DeleteProvider>
@@ -172,6 +184,7 @@ function BoardWithActions({
   setEditor: (editor: Editor | null) => void
 }) {
   const { currentPageId } = usePageContext()
+  const { resolvedTheme } = useTheme()
   const notes = useSyncNotes(editor, identity)
   useSyncCanvasShapes(editor)
   useCursorBroadcast(editor, identity)
@@ -180,9 +193,8 @@ function BoardWithActions({
   const clearCanvas = useMutation(api.drawings.clearPage)
 
   const editingId = useEditingNoteId()
-  const hasUnfinished = hasUnfinishedOwnedNote(notes, editingId)
-  const canAddNote = !hasUnfinished
-  const addNoteHint = 'Finish or delete your current note first'
+  const { canAddNote, hint: addNoteHint, enabledTitle: addNoteTitle } =
+    getAddNoteAvailability(notes, editingId)
 
   const handleAddNote = async () => {
     if (!editor || !canAddNote || !currentPageId) return
@@ -195,7 +207,7 @@ function BoardWithActions({
       x: center.x - NOTE_WIDTH / 2,
       y: center.y - NOTE_HEIGHT / 2,
       rotation: randomTilt(),
-      color: identity.color,
+      color: DEFAULT_NOTE_COLOR,
     })
     requestNoteFocus(noteId)
   }
@@ -212,12 +224,14 @@ function BoardWithActions({
       onAddNote={() => void handleAddNote()}
       canAddNote={canAddNote}
       addNoteHint={addNoteHint}
+      addNoteTitle={addNoteTitle}
     >
       <Tldraw
         licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY}
         shapeUtils={shapeUtils}
         components={components}
         overrides={boardUiOverrides}
+        colorScheme={resolvedTheme}
         onMount={(e) => {
           configureEditor(e)
           setEditor(e)
@@ -228,6 +242,7 @@ function BoardWithActions({
           onClearDrawings={() => void handleClearCanvas()}
           canAddNote={canAddNote}
           addNoteHint={addNoteHint}
+          addNoteTitle={addNoteTitle}
           onEditProfile={onEditProfile}
         />
       </Tldraw>

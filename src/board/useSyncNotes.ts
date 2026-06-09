@@ -100,6 +100,7 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
         if (shape.props.authorLinkedInUrl !== n.authorLinkedInUrl) {
           nextProps.authorLinkedInUrl = n.authorLinkedInUrl
         }
+        if (shape.props.color !== n.color) nextProps.color = n.color
 
         const posChanged =
           !isNoteDragging(n._id) && (shape.x !== n.x || shape.y !== n.y)

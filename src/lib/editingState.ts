@@ -74,3 +74,33 @@ export function hasUnfinishedOwnedNote(
       n.isOwner && (n.text.trim() === '' || n._id === editingId),
   )
 }
+
+export function getAddNoteAvailability(
+  notes: NoteForState[] | undefined,
+  editingId: string | null,
+): { canAddNote: boolean; hint: string; enabledTitle: string } {
+  const enabledTitle = 'One tip per person on this board'
+
+  if (!notes) {
+    return { canAddNote: false, hint: 'Loading board…', enabledTitle }
+  }
+
+  const ownedNotes = notes.filter((n) => n.isOwner)
+  if (ownedNotes.length === 0) {
+    return { canAddNote: true, hint: enabledTitle, enabledTitle }
+  }
+
+  if (hasUnfinishedOwnedNote(notes, editingId)) {
+    return {
+      canAddNote: false,
+      hint: 'Finish or delete your note first',
+      enabledTitle,
+    }
+  }
+
+  return {
+    canAddNote: false,
+    hint: 'One tip per person — you already shared yours',
+    enabledTitle,
+  }
+}

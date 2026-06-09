@@ -1,4 +1,13 @@
 import { createPortal } from 'react-dom'
+import { IconTrash } from '@tabler/icons-react'
+import {
+  displayTitleStyle,
+  modalBackdropStyle,
+  primaryBtnStyle,
+  secondaryBtnStyle,
+} from '../lib/uiStyles'
+import { iconProps } from '../lib/iconProps'
+import { MotionButton } from './MotionButton'
 
 export function DeleteConfirmModal({
   onConfirm,
@@ -8,20 +17,7 @@ export function DeleteConfirmModal({
   onCancel: () => void
 }) {
   return createPortal(
-    <div
-      className="modal-backdrop-enter"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 20000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-        background: 'rgba(0, 0, 0, 0.15)',
-      }}
-      onClick={onCancel}
-    >
+    <div className="modal-backdrop-enter" style={modalBackdropStyle} onClick={onCancel}>
       <div
         role="dialog"
         aria-labelledby="delete-title"
@@ -31,10 +27,10 @@ export function DeleteConfirmModal({
         style={{
           width: '100%',
           maxWidth: 340,
-          background: '#ffffff',
-          border: '1px solid #e5e5e5',
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
           borderRadius: 16,
-          boxShadow: '0 0 1px 0 rgba(0,0,0,0.4), 0 4px 12px 0 rgba(0,0,0,0.06)',
+          boxShadow: 'var(--shadow-card)',
           padding: 28,
           display: 'flex',
           flexDirection: 'column',
@@ -45,12 +41,10 @@ export function DeleteConfirmModal({
           <h2
             id="delete-title"
             style={{
+              ...displayTitleStyle,
               margin: 0,
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontWeight: 500,
               fontSize: 24,
               lineHeight: 1.2,
-              color: '#000000',
             }}
           >
             Delete this note?
@@ -60,8 +54,8 @@ export function DeleteConfirmModal({
               margin: '10px 0 0',
               fontSize: 14,
               lineHeight: 1.5,
-              color: '#777169',
-              fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+              color: 'var(--color-text-muted)',
+              fontFamily: 'var(--font-sans)',
             }}
           >
             This cannot be undone. Only you can delete notes you created.
@@ -69,66 +63,24 @@ export function DeleteConfirmModal({
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            type="button"
-            onClick={onCancel}
-            style={{
-              flex: 1,
-              background: '#ffffff',
-              color: '#000000',
-              border: '1px solid #e5e5e5',
-              borderRadius: 9999,
-              padding: '12px 16px',
-              minHeight: 44,
-              fontSize: 14,
-              fontWeight: 500,
-              fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-              cursor: 'pointer',
-            }}
-          >
+          <MotionButton type="button" onClick={onCancel} style={{ ...secondaryBtnStyle, flex: 1 }}>
             Cancel
-          </button>
-          <button
+          </MotionButton>
+          <MotionButton
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation()
               onConfirm()
             }}
-            style={{
-              flex: 1,
-              background: '#000000',
-              color: '#fdfcfc',
-              border: 'none',
-              borderRadius: 9999,
-              padding: '12px 16px',
-              minHeight: 44,
-              fontSize: 14,
-              fontWeight: 500,
-              fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-              cursor: 'pointer',
-            }}
+            style={{ ...primaryBtnStyle, flex: 1, cursor: 'pointer' }}
           >
             Delete
-          </button>
+          </MotionButton>
         </div>
       </div>
     </div>,
     document.body,
-  )
-}
-
-function TrashIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M4 7h16M9 7V5h6v2M10 11v5M14 11v5M6 7l1 12h10l1-12"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   )
 }
 
@@ -140,8 +92,9 @@ export function DeleteNoteButton({
   const stop = (e: React.PointerEvent | React.MouseEvent) => e.stopPropagation()
 
   return (
-    <button
+    <MotionButton
       type="button"
+      variant="ghost"
       title="Delete note"
       onPointerDown={stop}
       onClick={(e) => {
@@ -155,17 +108,19 @@ export function DeleteNoteButton({
         justifyContent: 'center',
         border: 'none',
         background: 'transparent',
-        color: '#b1b0b0',
+        color: 'var(--color-text-faint)',
         cursor: 'pointer',
         borderRadius: 8,
         pointerEvents: 'auto',
-        width: 36,
-        height: 36,
+        width: 44,
+        height: 44,
+        minWidth: 44,
+        minHeight: 44,
         padding: 0,
         transition: 'background 150ms ease, color 150ms ease',
       }}
     >
-      <TrashIcon />
-    </button>
+      <IconTrash {...iconProps(16)} />
+    </MotionButton>
   )
 }

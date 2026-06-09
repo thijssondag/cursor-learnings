@@ -19,7 +19,7 @@ export const boardUiOverrides: TLUiOverrides = {
     tools['add-tip-note'] = {
       id: 'add-tip-note',
       icon: 'tool-note',
-      label: 'Add note',
+      label: 'Add your tip (1 per person)',
       kbd: 'n',
       onSelect: () => {
         // Handled by BoardToolbar TldrawUiMenuItem onSelect

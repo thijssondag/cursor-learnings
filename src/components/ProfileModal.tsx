@@ -1,27 +1,16 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Identity } from '../lib/identity'
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  boxSizing: 'border-box',
-  background: '#ffffff',
-  border: '1px solid #e5e5e5',
-  borderRadius: 4,
-  padding: '12px 14px',
-  fontSize: 14,
-  fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-  color: '#000000',
-  outline: 'none',
-  minHeight: 44,
-}
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: '#777169',
-  marginBottom: 6,
-  display: 'block',
-}
+import {
+  displayTitleStyle,
+  inputStyle,
+  labelStyle,
+  modalBackdropStyle,
+  modalCardStyle,
+  primaryBtnStyle,
+  secondaryBtnStyle,
+} from '../lib/uiStyles'
+import { MotionButton } from './MotionButton'
 
 export function ProfileModal({
   identity,
@@ -48,20 +37,7 @@ export function ProfileModal({
   }
 
   return createPortal(
-    <div
-      className="modal-backdrop-enter"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 20000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-        background: 'rgba(0, 0, 0, 0.15)',
-      }}
-      onClick={onClose}
-    >
+    <div className="modal-backdrop-enter" style={modalBackdropStyle} onClick={onClose}>
       <form
         role="dialog"
         aria-labelledby="profile-title"
@@ -69,28 +45,15 @@ export function ProfileModal({
         className="modal-card-enter"
         onClick={(e) => e.stopPropagation()}
         onSubmit={submit}
-        style={{
-          width: '100%',
-          maxWidth: 360,
-          background: '#ffffff',
-          border: '1px solid #e5e5e5',
-          borderRadius: 16,
-          boxShadow: '0 0 1px 0 rgba(0,0,0,0.4), 0 4px 12px 0 rgba(0,0,0,0.06)',
-          padding: 28,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-        }}
+        style={modalCardStyle}
       >
         <h2
           id="profile-title"
           style={{
+            ...displayTitleStyle,
             margin: 0,
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontWeight: 500,
             fontSize: 24,
             lineHeight: 1.2,
-            color: '#000000',
           }}
         >
           Edit profile
@@ -112,7 +75,7 @@ export function ProfileModal({
 
         <div>
           <label htmlFor="profile-x" style={labelStyle}>
-            X handle <span style={{ color: '#b1b0b0' }}>(optional)</span>
+            X handle <span style={{ color: 'var(--color-text-faint)' }}>(optional)</span>
           </label>
           <input
             id="profile-x"
@@ -126,7 +89,7 @@ export function ProfileModal({
 
         <div>
           <label htmlFor="profile-linkedin" style={labelStyle}>
-            LinkedIn URL <span style={{ color: '#b1b0b0' }}>(optional)</span>
+            LinkedIn URL <span style={{ color: 'var(--color-text-faint)' }}>(optional)</span>
           </label>
           <input
             id="profile-linkedin"
@@ -139,45 +102,21 @@ export function ProfileModal({
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              flex: 1,
-              background: '#ffffff',
-              color: '#000000',
-              border: '1px solid #e5e5e5',
-              borderRadius: 9999,
-              padding: '12px 16px',
-              minHeight: 44,
-              fontSize: 14,
-              fontWeight: 500,
-              fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-              cursor: 'pointer',
-            }}
-          >
+          <MotionButton type="button" onClick={onClose} style={{ ...secondaryBtnStyle, flex: 1 }}>
             Cancel
-          </button>
-          <button
+          </MotionButton>
+          <MotionButton
             type="submit"
             disabled={!canSave}
             style={{
+              ...primaryBtnStyle,
               flex: 1,
-              background: '#000000',
-              color: '#fdfcfc',
-              border: 'none',
-              borderRadius: 9999,
-              padding: '12px 16px',
-              minHeight: 44,
-              fontSize: 14,
-              fontWeight: 500,
-              fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
               cursor: canSave ? 'pointer' : 'not-allowed',
               opacity: canSave ? 1 : 0.5,
             }}
           >
             Save
-          </button>
+          </MotionButton>
         </div>
       </form>
     </div>,

@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { IconDots, IconPencil, IconTrash } from '@tabler/icons-react'
 import type { Id } from '../../convex/_generated/dataModel'
 import { usePageContext, type BoardPage } from '../context/PageContext'
 import { APP_VERSION } from '../lib/constants'
+import { iconProps } from '../lib/iconProps'
+import { inputStyle } from '../lib/uiStyles'
+import { MotionButton } from './MotionButton'
 
-export function PageMenu() {
+export function PageMenu({ onEditProfile }: { onEditProfile?: () => void }) {
   const { pages, currentPage, currentPageId, setCurrentPageId, createPage, renamePage, deletePage } =
     usePageContext()
   const [open, setOpen] = useState(false)
@@ -12,18 +17,70 @@ export function PageMenu() {
   const [editingPageId, setEditingPageId] = useState<Id<'pages'> | null>(null)
   const [editName, setEditName] = useState('')
   const menuRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(null)
+
+  const closeMenu = () => {
+    setOpen(false)
+    setCreating(false)
+    setEditingPageId(null)
+    setNewPageName('')
+  }
 
   useEffect(() => {
     if (!open) return
     const onPointerDown = (e: PointerEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpen(false)
-        setCreating(false)
-        setEditingPageId(null)
-      }
+      const target = e.target as Node
+      if (menuRef.current?.contains(target) || panelRef.current?.contains(target)) return
+      closeMenu()
     }
     window.addEventListener('pointerdown', onPointerDown)
     return () => window.removeEventListener('pointerdown', onPointerDown)
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (editingPageId) {
+        setEditingPageId(null)
+        setEditName('')
+        return
+      }
+      if (creating) {
+        setCreating(false)
+        setNewPageName('')
+        return
+      }
+      closeMenu()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [open, editingPageId, creating])
+
+  useEffect(() => {
+    if (!open || !triggerRef.current) {
+      setPanelPos(null)
+      return
+    }
+    const updatePosition = () => {
+      const rect = triggerRef.current!.getBoundingClientRect()
+      const panelWidth = 260
+      const margin = 12
+      const left = Math.min(
+        rect.left,
+        window.innerWidth - panelWidth - margin,
+      )
+      setPanelPos({ top: rect.bottom + 8, left: Math.max(margin, left) })
+    }
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
   }, [open])
 
   const handleCreate = async () => {
@@ -63,54 +120,32 @@ export function PageMenu() {
 
   return (
     <div ref={menuRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span
-        style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontWeight: 500,
-          fontSize: 22,
-          lineHeight: 1.1,
-          color: '#000000',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          maxWidth: 220,
-        }}
-      >
+      <span className="page-menu__title">
         {currentPage?.name ?? 'Cursor Learnings'}
       </span>
-      <button
+      <MotionButton
+        ref={triggerRef}
         type="button"
+        variant="ghost"
         title="Pages"
         aria-label="Pages menu"
+        aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        style={{
-          border: 'none',
-          background: 'transparent',
-          cursor: 'pointer',
-          color: '#777169',
-          fontSize: 18,
-          lineHeight: 1,
-          padding: '4px 6px',
-          borderRadius: 6,
-        }}
+        className="page-menu__trigger"
       >
-        ⋯
-      </button>
+        <IconDots {...iconProps(18)} />
+      </MotionButton>
 
-      {open && (
+      {open &&
+        panelPos &&
+        createPortal(
         <div
+          ref={panelRef}
+          className="page-menu__panel"
           style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            marginTop: 8,
-            minWidth: 260,
-            background: '#ffffff',
-            border: '1px solid #e5e5e5',
-            borderRadius: 12,
-            boxShadow: '0 0 1px 0 rgba(0,0,0,0.4), 0 4px 12px 0 rgba(0,0,0,0.06)',
-            padding: 8,
-            zIndex: 400,
+            position: 'fixed',
+            top: panelPos.top,
+            left: panelPos.left,
           }}
         >
           {pages?.map((page) => (
@@ -122,7 +157,8 @@ export function PageMenu() {
                 gap: 4,
                 borderRadius: 8,
                 padding: '4px 6px',
-                background: page._id === currentPageId ? '#f5f3f1' : 'transparent',
+                background:
+                  page._id === currentPageId ? 'var(--color-surface-muted)' : 'transparent',
               }}
             >
               {editingPageId === page._id ? (
@@ -137,19 +173,17 @@ export function PageMenu() {
                   onBlur={() => void handleRename(page)}
                   maxLength={48}
                   style={{
+                    ...inputStyle,
                     flex: 1,
                     minWidth: 0,
-                    boxSizing: 'border-box',
-                    border: '1px solid #e5e5e5',
-                    borderRadius: 4,
+                    minHeight: 36,
                     padding: '6px 8px',
-                    fontSize: 14,
-                    fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
                   }}
                 />
               ) : (
-                <button
+                <MotionButton
                   type="button"
+                  variant="ghost"
                   onClick={() => {
                     setCurrentPageId(page._id as Id<'pages'>)
                     setOpen(false)
@@ -163,25 +197,31 @@ export function PageMenu() {
                     borderRadius: 6,
                     padding: '6px 8px',
                     fontSize: 14,
-                    fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-                    color: '#000000',
+                    fontWeight: 500,
+                    fontFamily: 'var(--font-sans)',
+                    color: 'var(--color-text)',
                     cursor: 'pointer',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                   }}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
                 >
                   {page.name}
                   {page.isLocked && (
-                    <span style={{ marginLeft: 6, fontSize: 11, color: '#a59f97' }}>locked</span>
+                    <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--color-text-faint)' }}>
+                      locked
+                    </span>
                   )}
-                </button>
+                </MotionButton>
               )}
 
               {page.canDelete && editingPageId !== page._id && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-                  <button
+                  <MotionButton
                     type="button"
+                    variant="ghost"
                     aria-label="Rename page"
                     title="Rename page"
                     onClick={(e) => {
@@ -190,26 +230,27 @@ export function PageMenu() {
                     }}
                     style={iconBtnStyle}
                   >
-                    <PencilIcon />
-                  </button>
-                  <button
+                    <IconPencil {...iconProps(14)} />
+                  </MotionButton>
+                  <MotionButton
                     type="button"
+                    variant="ghost"
                     aria-label="Delete page"
                     title="Delete page"
                     onClick={(e) => {
                       e.stopPropagation()
                       void handleDeletePage(page)
                     }}
-                    style={{ ...iconBtnStyle, color: '#b42318' }}
+                    style={{ ...iconBtnStyle, color: 'var(--color-error)' }}
                   >
-                    <TrashIcon />
-                  </button>
+                    <IconTrash {...iconProps(14)} />
+                  </MotionButton>
                 </div>
               )}
             </div>
           ))}
 
-          <div style={{ height: 1, background: '#e5e5e5', margin: '6px 0' }} />
+          <div style={{ height: 1, background: 'var(--color-border)', margin: '6px 0' }} />
 
           {creating ? (
             <div style={{ padding: '4px 8px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -220,60 +261,66 @@ export function PageMenu() {
                 placeholder="Page name"
                 maxLength={48}
                 style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  border: '1px solid #e5e5e5',
-                  borderRadius: 4,
-                  padding: '8px 10px',
+                  ...inputStyle,
                   fontSize: 13,
-                  fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+                  minHeight: 36,
+                  padding: '8px 10px',
                 }}
               />
               <div style={{ display: 'flex', gap: 6 }}>
-                <button
-                  type="button"
-                  onClick={() => void handleCreate()}
-                  style={menuBtnStyle('#000000', '#fdfcfc')}
-                >
+                <MotionButton type="button" onClick={() => void handleCreate()} style={menuBtnPrimaryStyle}>
                   Create
-                </button>
-                <button
+                </MotionButton>
+                <MotionButton
                   type="button"
                   onClick={() => {
                     setCreating(false)
                     setNewPageName('')
                   }}
-                  style={menuBtnStyle('#ffffff', '#000000', true)}
+                  style={menuBtnSecondaryStyle}
                 >
                   Cancel
-                </button>
+                </MotionButton>
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => setCreating(true)}
-              style={menuItemStyle}
-            >
+            <MotionButton type="button" onClick={() => setCreating(true)} style={menuItemStyle}>
               New page
-            </button>
+            </MotionButton>
           )}
+          {onEditProfile && (
+            <>
+              <div style={{ height: 1, background: 'var(--color-border)', margin: '6px 0' }} />
+              <MotionButton
+                type="button"
+                onClick={() => {
+                  onEditProfile()
+                  closeMenu()
+                }}
+                className="page-menu__edit-profile"
+              >
+                Edit profile
+              </MotionButton>
+            </>
+          )}
+
           <div
             aria-hidden
             style={{
               fontSize: 10,
               lineHeight: 1.2,
-              color: '#000000',
+              color: 'var(--color-text)',
               opacity: 0.3,
               textAlign: 'center',
               padding: '4px 8px 2px',
-              fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+              fontFamily: 'var(--font-sans)',
               userSelect: 'none',
             }}
           >
             v{APP_VERSION}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )
@@ -288,7 +335,7 @@ const iconBtnStyle: React.CSSProperties = {
   border: 'none',
   background: 'transparent',
   borderRadius: 6,
-  color: '#777169',
+  color: 'var(--color-text-muted)',
   cursor: 'pointer',
   padding: 0,
   flexShrink: 0,
@@ -303,49 +350,32 @@ const menuItemStyle: React.CSSProperties = {
   borderRadius: 8,
   padding: '10px 12px',
   fontSize: 14,
-  fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-  color: '#000000',
+  fontWeight: 500,
+  fontFamily: 'var(--font-sans)',
+  color: 'var(--color-text)',
   cursor: 'pointer',
 }
 
-function menuBtnStyle(bg: string, color: string, bordered = false): React.CSSProperties {
-  return {
-    flex: 1,
-    background: bg,
-    color,
-    border: bordered ? '1px solid #e5e5e5' : 'none',
-    borderRadius: 9999,
-    padding: '8px 10px',
-    fontSize: 13,
-    fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-    cursor: 'pointer',
-  }
+const menuBtnBase: React.CSSProperties = {
+  flex: 1,
+  borderRadius: 9999,
+  padding: '8px 10px',
+  fontSize: 13,
+  fontFamily: 'var(--font-sans)',
+  fontWeight: 500,
+  cursor: 'pointer',
 }
 
-function PencilIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
+const menuBtnPrimaryStyle: React.CSSProperties = {
+  ...menuBtnBase,
+  background: 'var(--color-btn-bg)',
+  color: 'var(--color-btn-text)',
+  border: 'none',
 }
 
-function TrashIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M4 7h16M9 7V5h6v2M10 11v5M14 11v5M6 7l1 12h10l1-12"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
+const menuBtnSecondaryStyle: React.CSSProperties = {
+  ...menuBtnBase,
+  background: 'var(--color-surface)',
+  color: 'var(--color-text)',
+  border: '1px solid var(--color-border)',
 }

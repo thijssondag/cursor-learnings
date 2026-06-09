@@ -4,7 +4,8 @@ import { createContext, useContext } from 'react'
 interface BoardActionsContextValue {
   onAddNote: () => void
   canAddNote: boolean
-  addNoteHint?: string
+  addNoteHint: string
+  addNoteTitle: string
 }
 
 const BoardActionsContext = createContext<BoardActionsContextValue | null>(null)
@@ -13,10 +14,13 @@ export function BoardActionsProvider({
   onAddNote,
   canAddNote,
   addNoteHint,
+  addNoteTitle,
   children,
 }: BoardActionsContextValue & { children: React.ReactNode }) {
   return (
-    <BoardActionsContext.Provider value={{ onAddNote, canAddNote, addNoteHint }}>
+    <BoardActionsContext.Provider
+      value={{ onAddNote, canAddNote, addNoteHint, addNoteTitle }}
+    >
       {children}
     </BoardActionsContext.Provider>
   )

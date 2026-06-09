@@ -14,8 +14,6 @@ export const USER_COLORS = [
   '#a78bfa', // purple
   '#fbbf24', // amber
   '#22d3ee', // cyan
-  '#fb7185', // rose
-  '#4ade80', // green
 ]
 
 export interface Identity {

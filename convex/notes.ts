@@ -55,6 +55,19 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const authorName = args.authorName.trim()
     if (!authorName) throw new Error('Name is required to create a note')
+
+    const pageNotes = await ctx.db
+      .query('notes')
+      .withIndex('by_page', (q) => q.eq('pageId', args.pageId))
+      .collect()
+    if (pageNotes.some((note) => note.authorSessionId === args.sessionId)) {
+      throw new Error('One tip per person on each page')
+    }
+
+    if (!(NOTE_COLORS as readonly string[]).includes(args.color)) {
+      throw new Error('Invalid note color')
+    }
+
     const profileFields = await profileFieldsForAuthor(ctx, args.sessionId)
     return ctx.db.insert('notes', {
       pageId: args.pageId,
@@ -72,6 +85,15 @@ export const create = mutation({
   },
 })
 
+const NOTE_COLORS = [
+  '#34d399',
+  '#f472b6',
+  '#60a5fa',
+  '#a78bfa',
+  '#fbbf24',
+  '#22d3ee',
+] as const
+
 export const update = mutation({
   args: {
     noteId: v.id('notes'),
@@ -81,6 +103,21 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const note = await requireOwnedNote(ctx, args.noteId, args.sessionId)
     await ctx.db.patch(note._id, { text: args.text })
+  },
+})
+
+export const updateColor = mutation({
+  args: {
+    noteId: v.id('notes'),
+    sessionId: v.string(),
+    color: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (!(NOTE_COLORS as readonly string[]).includes(args.color)) {
+      throw new Error('Invalid note color')
+    }
+    const note = await requireOwnedNote(ctx, args.noteId, args.sessionId)
+    await ctx.db.patch(note._id, { color: args.color })
   },
 })
 
