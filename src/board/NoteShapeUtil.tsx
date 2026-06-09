@@ -7,10 +7,10 @@ import {
   type RecordProps,
   type TLBaseShape,
 } from 'tldraw'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation } from 'convex/react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { IconHeart, IconHeartFilled } from '@tabler/icons-react'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
@@ -21,8 +21,16 @@ import { useRequestDelete } from '../context/DeleteContext'
 import { useIdentity } from '../context/IdentityContext'
 import {
   consumeFocusRequest,
+  consumeNoteEntrance,
+  type NoteEntrance,
   setEditingNoteId,
 } from '../lib/editingState'
+import {
+  EASE_OUT_QUINT,
+  NOTE_ENTER_OWN,
+  NOTE_ENTER_REMOTE,
+  motionDuration,
+} from '../lib/motion'
 import { throttle } from '../lib/throttle'
 import { iconProps } from '../lib/iconProps'
 import {
@@ -138,6 +146,8 @@ function NoteCard({ shape }: { shape: NoteShape }) {
   const [swatchPos, setSwatchPos] = useState<{ top: number; left: number; rotation: number } | null>(
     null,
   )
+  const [entrance] = useState<NoteEntrance>(() => consumeNoteEntrance(noteId))
+  const reduceMotion = useReducedMotion()
   const isFocused = useRef(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const colorSwatchRef = useRef<HTMLDivElement>(null)
@@ -161,10 +171,17 @@ function NoteCard({ shape }: { shape: NoteShape }) {
 
   useEffect(() => {
     if (!isOwner || !textareaRef.current) return
-    if (consumeFocusRequest(noteId)) {
-      textareaRef.current.focus()
+    const focusNote = () => {
+      if (consumeFocusRequest(noteId)) {
+        textareaRef.current?.focus()
+      }
     }
-  }, [isOwner, noteId])
+    if (entrance === 'own' && !reduceMotion) {
+      const timer = window.setTimeout(focusNote, 150)
+      return () => window.clearTimeout(timer)
+    }
+    focusNote()
+  }, [isOwner, noteId, entrance, reduceMotion])
 
   const persistText = useMemo(
     () =>
@@ -258,7 +275,22 @@ function NoteCard({ shape }: { shape: NoteShape }) {
           pointerEvents: 'none',
         }}
       >
-        <div
+        <motion.div
+          initial={
+            entrance === 'own'
+              ? { opacity: 0, scale: 0.92, y: 8 }
+              : entrance === 'remote'
+                ? { opacity: 0 }
+                : false
+          }
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{
+            duration: motionDuration(
+              entrance === 'own' ? NOTE_ENTER_OWN : NOTE_ENTER_REMOTE,
+              reduceMotion,
+            ),
+            ease: EASE_OUT_QUINT,
+          }}
           style={{
             width: '100%',
             height: '100%',
@@ -267,7 +299,10 @@ function NoteCard({ shape }: { shape: NoteShape }) {
             background: surface.background,
             border: `1px solid ${surface.borderColor}`,
             borderRadius: 16,
-            boxShadow: 'var(--shadow-card)',
+            boxShadow:
+              entrance === 'own'
+                ? 'var(--shadow-card-elevated, var(--shadow-card))'
+                : 'var(--shadow-card)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
@@ -514,7 +549,7 @@ function NoteCard({ shape }: { shape: NoteShape }) {
               </MotionButton>
             </div>
           </div>
-        </div>
+        </motion.div>
       </HTMLContainer>
 
       {typeof document !== 'undefined' &&

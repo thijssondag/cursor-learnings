@@ -1,86 +1,59 @@
-import { createPortal } from 'react-dom'
 import { IconTrash } from '@tabler/icons-react'
+import { Modal } from './Modal'
+import { MotionButton } from './MotionButton'
 import {
   displayTitleStyle,
-  modalBackdropStyle,
+  modalBodyStyle,
   primaryBtnStyle,
   secondaryBtnStyle,
 } from '../lib/uiStyles'
 import { iconProps } from '../lib/iconProps'
-import { MotionButton } from './MotionButton'
 
 export function DeleteConfirmModal({
+  open,
   onConfirm,
   onCancel,
 }: {
+  open: boolean
   onConfirm: () => void
   onCancel: () => void
 }) {
-  return createPortal(
-    <div className="modal-backdrop-enter" style={modalBackdropStyle} onClick={onCancel}>
-      <div
-        role="dialog"
-        aria-labelledby="delete-title"
-        aria-modal="true"
-        className="modal-card-enter"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '100%',
-          maxWidth: 340,
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 16,
-          boxShadow: 'var(--shadow-card)',
-          padding: 28,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 20,
-        }}
-      >
-        <div>
-          <h2
-            id="delete-title"
-            style={{
-              ...displayTitleStyle,
-              margin: 0,
-              fontSize: 24,
-              lineHeight: 1.2,
-            }}
-          >
-            Delete this note?
-          </h2>
-          <p
-            style={{
-              margin: '10px 0 0',
-              fontSize: 14,
-              lineHeight: 1.5,
-              color: 'var(--color-text-muted)',
-              fontFamily: 'var(--font-sans)',
-            }}
-          >
-            This cannot be undone. Only you can delete notes you created.
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10 }}>
-          <MotionButton type="button" onClick={onCancel} style={{ ...secondaryBtnStyle, flex: 1 }}>
-            Cancel
-          </MotionButton>
-          <MotionButton
-            type="button"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation()
-              onConfirm()
-            }}
-            style={{ ...primaryBtnStyle, flex: 1, cursor: 'pointer' }}
-          >
-            Delete
-          </MotionButton>
-        </div>
+  return (
+    <Modal open={open} onClose={onCancel} titleId="delete-title">
+      <div>
+        <h2
+          id="delete-title"
+          style={{
+            ...displayTitleStyle,
+            margin: 0,
+            fontSize: 24,
+            lineHeight: 1.2,
+          }}
+        >
+          Delete this note?
+        </h2>
+        <p style={modalBodyStyle}>
+          This cannot be undone. Only you can delete notes you created.
+        </p>
       </div>
-    </div>,
-    document.body,
+
+      <div style={{ display: 'flex', gap: 10 }}>
+        <MotionButton type="button" onClick={onCancel} style={{ ...secondaryBtnStyle, flex: 1 }}>
+          Cancel
+        </MotionButton>
+        <MotionButton
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation()
+            onConfirm()
+          }}
+          style={{ ...primaryBtnStyle, flex: 1, cursor: 'pointer' }}
+        >
+          Delete
+        </MotionButton>
+      </div>
+    </Modal>
   )
 }
 

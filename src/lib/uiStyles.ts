@@ -40,6 +40,14 @@ export const displayTitleStyle: CSSProperties = {
   color: 'var(--color-text)',
 }
 
+export const modalBodyStyle: CSSProperties = {
+  margin: '10px 0 0',
+  fontSize: 14,
+  lineHeight: 1.5,
+  color: 'var(--color-text-muted)',
+  fontFamily: 'var(--font-sans)',
+}
+
 export const pillBtnBase: CSSProperties = {
   pointerEvents: 'auto',
   display: 'inline-flex',

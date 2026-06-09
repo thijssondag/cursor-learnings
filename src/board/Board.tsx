@@ -20,13 +20,14 @@ import { NOTE_HEIGHT, NOTE_WIDTH, randomTilt } from '../lib/constants'
 import { DEFAULT_NOTE_COLOR } from '../lib/noteColors'
 import {
   getAddNoteAvailability,
+  markNoteJustCreated,
   requestNoteFocus,
   useEditingNoteId,
 } from '../lib/editingState'
 import { updateIdentity } from '../lib/identity'
 import { NoteShapeUtil } from './NoteShapeUtil'
 import { useSyncNotes } from './useSyncNotes'
-import { deleteLocalCanvasShapes, useSyncCanvasShapes } from './useSyncCanvasShapes'
+import { fadeOutAndDeleteLocalCanvasShapes, useSyncCanvasShapes } from './useSyncCanvasShapes'
 import { useCursorBroadcast } from './usePresence'
 import { BoardToolbar } from './BoardToolbar'
 import { boardUiOverrides } from './boardUiOverrides'
@@ -36,6 +37,7 @@ import { CursorBoardBackground } from '../components/CursorBoardBackground'
 import { ProfileModal } from '../components/ProfileModal'
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal'
 import { WelcomeDialog } from '../components/WelcomeDialog'
+import { ClearCanvasModal } from '../components/ClearCanvasModal'
 import { hasSeenWelcome, markWelcomeSeen } from '../lib/welcome'
 
 const shapeUtils = [NoteShapeUtil]
@@ -69,6 +71,46 @@ function configureEditor(editor: Editor) {
   })
 }
 
+function ClearCanvasGate({
+  editor,
+  open,
+  isClearing,
+  onClose,
+  onClearingChange,
+}: {
+  editor: Editor | null
+  open: boolean
+  isClearing: boolean
+  onClose: () => void
+  onClearingChange: (clearing: boolean) => void
+}) {
+  const { currentPageId } = usePageContext()
+  const clearCanvas = useMutation(api.drawings.clearPage)
+
+  const handleConfirm = async () => {
+    if (!editor || !currentPageId || isClearing) return
+    onClearingChange(true)
+    try {
+      await fadeOutAndDeleteLocalCanvasShapes(editor)
+      await clearCanvas({ pageId: currentPageId })
+    } catch (err) {
+      console.error('Failed to clear canvas:', err)
+    } finally {
+      onClearingChange(false)
+      onClose()
+    }
+  }
+
+  return (
+    <ClearCanvasModal
+      open={open}
+      isClearing={isClearing}
+      onCancel={onClose}
+      onConfirm={() => void handleConfirm()}
+    />
+  )
+}
+
 export function Board({
   identity,
   onIdentityChange,
@@ -80,10 +122,17 @@ export function Board({
   const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null)
   const [showProfile, setShowProfile] = useState(false)
   const [showWelcome, setShowWelcome] = useState(() => !hasSeenWelcome())
+  const [showClearCanvas, setShowClearCanvas] = useState(false)
+  const [isClearingCanvas, setIsClearingCanvas] = useState(false)
   const removeNote = useMutation(api.notes.remove)
   const upsertProfile = useMutation(api.profiles.upsert)
 
-  const overlayOpen = deleteNoteId !== null || showProfile || showWelcome
+  const overlayOpen =
+    deleteNoteId !== null ||
+    showProfile ||
+    showWelcome ||
+    showClearCanvas ||
+    isClearingCanvas
 
   const handleConfirmDelete = async () => {
     if (!deleteNoteId) return
@@ -138,24 +187,23 @@ export function Board({
                 editor={editor}
                 identity={identity}
                 onEditProfile={() => setShowProfile(true)}
+                onRequestClearCanvas={() => setShowClearCanvas(true)}
                 setEditor={setEditor}
               />
               {editor && <RemoteCursors editor={editor} />}
             </div>
 
-            {deleteNoteId && (
-              <DeleteConfirmModal
-                onCancel={() => setDeleteNoteId(null)}
-                onConfirm={() => void handleConfirmDelete()}
-              />
-            )}
-            {showProfile && (
-              <ProfileModal
-                identity={identity}
-                onSave={(updates) => void handleProfileSave(updates)}
-                onClose={() => setShowProfile(false)}
-              />
-            )}
+            <DeleteConfirmModal
+              open={deleteNoteId !== null}
+              onCancel={() => setDeleteNoteId(null)}
+              onConfirm={() => void handleConfirmDelete()}
+            />
+            <ProfileModal
+              open={showProfile}
+              identity={identity}
+              onSave={(updates) => void handleProfileSave(updates)}
+              onClose={() => setShowProfile(false)}
+            />
             {showWelcome && (
               <WelcomeDialog
                 name={identity.name}
@@ -165,6 +213,13 @@ export function Board({
                 }}
               />
             )}
+            <ClearCanvasGate
+              editor={editor}
+              open={showClearCanvas}
+              isClearing={isClearingCanvas}
+              onClose={() => setShowClearCanvas(false)}
+              onClearingChange={setIsClearingCanvas}
+            />
           </DeleteProvider>
         </PageProvider>
       </PresenceProvider>
@@ -176,11 +231,13 @@ function BoardWithActions({
   editor,
   identity,
   onEditProfile,
+  onRequestClearCanvas,
   setEditor,
 }: {
   editor: Editor | null
   identity: Identity
   onEditProfile: () => void
+  onRequestClearCanvas: () => void
   setEditor: (editor: Editor | null) => void
 }) {
   const { currentPageId } = usePageContext()
@@ -190,7 +247,6 @@ function BoardWithActions({
   useCursorBroadcast(editor, identity)
 
   const createNote = useMutation(api.notes.create)
-  const clearCanvas = useMutation(api.drawings.clearPage)
 
   const editingId = useEditingNoteId()
   const { canAddNote, hint: addNoteHint, enabledTitle: addNoteTitle } =
@@ -209,14 +265,8 @@ function BoardWithActions({
       rotation: randomTilt(),
       color: DEFAULT_NOTE_COLOR,
     })
+    markNoteJustCreated(noteId)
     requestNoteFocus(noteId)
-  }
-
-  const handleClearCanvas = async () => {
-    if (!currentPageId || !editor) return
-    if (!window.confirm('Remove all drawings and shapes on this page for everyone?')) return
-    await clearCanvas({ pageId: currentPageId })
-    deleteLocalCanvasShapes(editor)
   }
 
   return (
@@ -239,7 +289,7 @@ function BoardWithActions({
       >
         <TopBar
           onAddNote={() => void handleAddNote()}
-          onClearDrawings={() => void handleClearCanvas()}
+          onClearDrawings={onRequestClearCanvas}
           canAddNote={canAddNote}
           addNoteHint={addNoteHint}
           addNoteTitle={addNoteTitle}

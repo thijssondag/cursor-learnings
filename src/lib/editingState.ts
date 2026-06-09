@@ -5,7 +5,15 @@ import { useEffect, useState } from 'react'
 let editingNoteId: string | null = null
 const draggingNoteIds = new Set<string>()
 let focusNoteId: string | null = null
+const justCreatedNoteIds = new Set<string>()
+const remoteAppearNoteIds = new Set<string>()
 const listeners = new Set<() => void>()
+
+const APPEAR_TTL_MS = 800
+
+function scheduleAppearExpiry(noteId: string, set: Set<string>) {
+  window.setTimeout(() => set.delete(noteId), APPEAR_TTL_MS)
+}
 
 function notifyEditingListeners() {
   listeners.forEach((l) => l())
@@ -56,6 +64,40 @@ export function consumeFocusRequest(noteId: string): boolean {
     return true
   }
   return false
+}
+
+export function markNoteJustCreated(noteId: string) {
+  justCreatedNoteIds.add(noteId)
+  scheduleAppearExpiry(noteId, justCreatedNoteIds)
+}
+
+export function isNoteJustCreated(noteId: string): boolean {
+  return justCreatedNoteIds.has(noteId)
+}
+
+export function consumeJustCreated(noteId: string): boolean {
+  if (!justCreatedNoteIds.has(noteId)) return false
+  justCreatedNoteIds.delete(noteId)
+  return true
+}
+
+export function markRemoteNoteAppear(noteId: string) {
+  remoteAppearNoteIds.add(noteId)
+  scheduleAppearExpiry(noteId, remoteAppearNoteIds)
+}
+
+export function consumeRemoteAppear(noteId: string): boolean {
+  if (!remoteAppearNoteIds.has(noteId)) return false
+  remoteAppearNoteIds.delete(noteId)
+  return true
+}
+
+export type NoteEntrance = 'own' | 'remote' | null
+
+export function consumeNoteEntrance(noteId: string): NoteEntrance {
+  if (consumeJustCreated(noteId)) return 'own'
+  if (consumeRemoteAppear(noteId)) return 'remote'
+  return null
 }
 
 export interface NoteForState {
