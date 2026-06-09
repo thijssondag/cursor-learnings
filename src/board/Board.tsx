@@ -17,6 +17,7 @@ import { BoardActionsProvider } from '../context/BoardActionsContext'
 import { useTheme } from '../context/ThemeContext'
 import type { Identity } from '../lib/identity'
 import { NOTE_HEIGHT, NOTE_WIDTH, randomTilt } from '../lib/constants'
+import { findNonOverlappingPosition } from '../lib/notePlacement'
 import { DEFAULT_NOTE_COLOR } from '../lib/noteColors'
 import {
   getAddNoteAvailability,
@@ -282,13 +283,19 @@ function BoardWithActions({
   const handleAddNote = async () => {
     if (!editor || !canAddNote || !currentPageId) return
     const center = editor.getViewportPageBounds().center
+    const preferred = {
+      x: center.x - NOTE_WIDTH / 2,
+      y: center.y - NOTE_HEIGHT / 2,
+    }
+    const existingPositions = (notes ?? []).map((n) => ({ x: n.x, y: n.y }))
+    const { x, y } = findNonOverlappingPosition(preferred, existingPositions)
     const noteId = await createNote({
       pageId: currentPageId,
       sessionId: identity.sessionId,
       authorName: identity.name,
       text: '',
-      x: center.x - NOTE_WIDTH / 2,
-      y: center.y - NOTE_HEIGHT / 2,
+      x,
+      y,
       rotation: randomTilt(),
       color: DEFAULT_NOTE_COLOR,
     })

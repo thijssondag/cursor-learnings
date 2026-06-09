@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import type { MutationCtx, QueryCtx } from './_generated/server'
+import { findNonOverlappingPosition } from './notePlacement'
 
 async function profileFieldsForAuthor(ctx: QueryCtx | MutationCtx, sessionId: string) {
   const profile = await ctx.db
@@ -59,11 +60,12 @@ export const create = mutation({
     const page = await ctx.db.get(args.pageId)
     if (!page) throw new Error('Page not found')
 
+    const pageNotes = await ctx.db
+      .query('notes')
+      .withIndex('by_page', (q) => q.eq('pageId', args.pageId))
+      .collect()
+
     if (page.isLocked) {
-      const pageNotes = await ctx.db
-        .query('notes')
-        .withIndex('by_page', (q) => q.eq('pageId', args.pageId))
-        .collect()
       if (pageNotes.some((note) => note.authorSessionId === args.sessionId)) {
         throw new Error('One tip per person on each page')
       }
@@ -74,14 +76,18 @@ export const create = mutation({
     }
 
     const profileFields = await profileFieldsForAuthor(ctx, args.sessionId)
+    const { x, y } = findNonOverlappingPosition(
+      { x: args.x, y: args.y },
+      pageNotes.map((n) => ({ x: n.x, y: n.y })),
+    )
     return ctx.db.insert('notes', {
       pageId: args.pageId,
       authorSessionId: args.sessionId,
       authorName,
       ...profileFields,
       text: args.text,
-      x: args.x,
-      y: args.y,
+      x,
+      y,
       rotation: args.rotation,
       color: args.color,
       heartCount: 0,
@@ -135,7 +141,20 @@ export const move = mutation({
   handler: async (ctx, args) => {
     const note = await ctx.db.get(args.noteId)
     if (!note) throw new Error('Note not found')
-    await ctx.db.patch(args.noteId, { x: args.x, y: args.y })
+    if (!note.pageId) throw new Error('Note has no page')
+
+    const pageNotes = await ctx.db
+      .query('notes')
+      .withIndex('by_page', (q) => q.eq('pageId', note.pageId))
+      .collect()
+    const { x, y } = findNonOverlappingPosition(
+      { x: args.x, y: args.y },
+      pageNotes.map((n) => ({ x: n.x, y: n.y })),
+      undefined,
+      args.noteId,
+      pageNotes.map((n) => n._id),
+    )
+    await ctx.db.patch(args.noteId, { x, y })
   },
 })
 
