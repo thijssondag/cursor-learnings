@@ -1,7 +1,7 @@
 import { IconDeviceDesktop, IconMoon, IconSun } from '@tabler/icons-react'
 import { useTheme, type ThemePreference } from '../context/ThemeContext'
 import { iconProps } from '../lib/iconProps'
-import { MotionButton } from './MotionButton'
+import { Button } from './Button'
 
 const LABELS: Record<ThemePreference, string> = {
   light: 'Light',
@@ -13,16 +13,18 @@ export function ThemeToggle() {
   const { preference, cyclePreference } = useTheme()
 
   return (
-    <MotionButton
+    <Button
       type="button"
+      color="secondary"
+      size="sm"
       onClick={cyclePreference}
       title={`Theme: ${LABELS[preference]}. Click to change.`}
       aria-label={`Theme: ${LABELS[preference]}. Click to change.`}
-      className="top-bar__btn top-bar__btn--secondary theme-toggle"
+      iconLeading={<ThemeIcon preference={preference} />}
+      className="theme-toggle top-bar__action-btn"
     >
-      <ThemeIcon preference={preference} />
       <span className="theme-toggle__label">{LABELS[preference]}</span>
-    </MotionButton>
+    </Button>
   )
 }
 

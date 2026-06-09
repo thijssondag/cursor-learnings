@@ -1,14 +1,8 @@
 import { useState } from 'react'
 import type { Identity } from '../lib/identity'
-import {
-  displayTitleStyle,
-  inputStyle,
-  labelStyle,
-  primaryBtnStyle,
-  secondaryBtnStyle,
-} from '../lib/uiStyles'
+import { displayTitleStyle, inputStyle, labelStyle } from '../lib/uiStyles'
 import { Modal } from './Modal'
-import { MotionButton } from './MotionButton'
+import { Button } from './Button'
 
 export function ProfileModal({
   open,
@@ -102,21 +96,12 @@ export function ProfileModal({
       </div>
 
       <div style={{ display: 'flex', gap: 10 }}>
-        <MotionButton type="button" onClick={onClose} style={{ ...secondaryBtnStyle, flex: 1 }}>
+        <Button type="button" color="secondary" size="md" onClick={onClose} fullWidth>
           Cancel
-        </MotionButton>
-        <MotionButton
-          type="submit"
-          disabled={!canSave}
-          style={{
-            ...primaryBtnStyle,
-            flex: 1,
-            cursor: canSave ? 'pointer' : 'not-allowed',
-            opacity: canSave ? 1 : 0.5,
-          }}
-        >
+        </Button>
+        <Button type="submit" color="primary" size="md" isDisabled={!canSave} fullWidth>
           Save
-        </MotionButton>
+        </Button>
       </div>
     </Modal>
   )

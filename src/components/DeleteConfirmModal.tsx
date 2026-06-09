@@ -1,12 +1,8 @@
 import { IconTrash } from '@tabler/icons-react'
 import { Modal } from './Modal'
+import { Button } from './Button'
 import { MotionButton } from './MotionButton'
-import {
-  displayTitleStyle,
-  modalBodyStyle,
-  primaryBtnStyle,
-  secondaryBtnStyle,
-} from '../lib/uiStyles'
+import { displayTitleStyle, modalBodyStyle } from '../lib/uiStyles'
 import { iconProps } from '../lib/iconProps'
 
 export function DeleteConfirmModal({
@@ -38,20 +34,22 @@ export function DeleteConfirmModal({
       </div>
 
       <div style={{ display: 'flex', gap: 10 }}>
-        <MotionButton type="button" onClick={onCancel} style={{ ...secondaryBtnStyle, flex: 1 }}>
+        <Button type="button" color="secondary" size="md" onClick={onCancel} fullWidth>
           Cancel
-        </MotionButton>
-        <MotionButton
+        </Button>
+        <Button
           type="button"
+          color="primary-destructive"
+          size="md"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation()
             onConfirm()
           }}
-          style={{ ...primaryBtnStyle, flex: 1, cursor: 'pointer' }}
+          fullWidth
         >
           Delete
-        </MotionButton>
+        </Button>
       </div>
     </Modal>
   )
