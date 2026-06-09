@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Tldraw,
   DefaultSizeStyle,
@@ -21,16 +21,21 @@ import { DEFAULT_NOTE_COLOR } from '../lib/noteColors'
 import {
   getAddNoteAvailability,
   markNoteJustCreated,
-  requestNoteFocus,
   useEditingNoteId,
 } from '../lib/editingState'
 import { updateIdentity } from '../lib/identity'
 import { NoteShapeUtil } from './NoteShapeUtil'
 import { useSyncNotes } from './useSyncNotes'
-import { fadeOutAndDeleteLocalCanvasShapes, useSyncCanvasShapes } from './useSyncCanvasShapes'
+import {
+  cancelCanvasClear,
+  fadeOutAndDeleteLocalCanvasShapes,
+  finishCanvasClear,
+  prepareCanvasClear,
+  useSyncCanvasShapes,
+} from './useSyncCanvasShapes'
 import { useCursorBroadcast } from './usePresence'
 import { BoardToolbar } from './BoardToolbar'
-import { boardUiOverrides } from './boardUiOverrides'
+import { createBoardUiOverrides } from './boardUiOverrides'
 import { TopBar } from '../components/TopBar'
 import { RemoteCursors } from '../components/RemoteCursors'
 import { CursorBoardBackground } from '../components/CursorBoardBackground'
@@ -87,15 +92,25 @@ function ClearCanvasGate({
   const { currentPageId } = usePageContext()
   const clearCanvas = useMutation(api.drawings.clearPage)
 
+  useEffect(() => {
+    if (open) prepareCanvasClear()
+  }, [open])
+
+  const handleCancel = () => {
+    cancelCanvasClear()
+    onClose()
+  }
+
   const handleConfirm = async () => {
     if (!editor || !currentPageId || isClearing) return
     onClearingChange(true)
     try {
-      await fadeOutAndDeleteLocalCanvasShapes(editor)
       await clearCanvas({ pageId: currentPageId })
+      await fadeOutAndDeleteLocalCanvasShapes(editor)
     } catch (err) {
       console.error('Failed to clear canvas:', err)
     } finally {
+      finishCanvasClear()
       onClearingChange(false)
       onClose()
     }
@@ -105,7 +120,7 @@ function ClearCanvasGate({
     <ClearCanvasModal
       open={open}
       isClearing={isClearing}
-      onCancel={onClose}
+      onCancel={handleCancel}
       onConfirm={() => void handleConfirm()}
     />
   )
@@ -240,7 +255,7 @@ function BoardWithActions({
   onRequestClearCanvas: () => void
   setEditor: (editor: Editor | null) => void
 }) {
-  const { currentPageId } = usePageContext()
+  const { currentPageId, currentPage } = usePageContext()
   const { resolvedTheme } = useTheme()
   const notes = useSyncNotes(editor, identity)
   useSyncCanvasShapes(editor)
@@ -249,8 +264,20 @@ function BoardWithActions({
   const createNote = useMutation(api.notes.create)
 
   const editingId = useEditingNoteId()
-  const { canAddNote, hint: addNoteHint, enabledTitle: addNoteTitle } =
-    getAddNoteAvailability(notes, editingId)
+  const isSingleNotePage = currentPage?.isLocked ?? true
+  const {
+    canAddNote,
+    hint: addNoteHint,
+    enabledTitle: addNoteTitle,
+    addNoteLabel,
+    addNoteLimit,
+    addNoteShortLabel,
+  } = getAddNoteAvailability(notes, editingId, isSingleNotePage)
+
+  const boardUiOverrides = useMemo(
+    () => createBoardUiOverrides(`${addNoteLabel}${addNoteLimit}`),
+    [addNoteLabel, addNoteLimit],
+  )
 
   const handleAddNote = async () => {
     if (!editor || !canAddNote || !currentPageId) return
@@ -266,7 +293,6 @@ function BoardWithActions({
       color: DEFAULT_NOTE_COLOR,
     })
     markNoteJustCreated(noteId)
-    requestNoteFocus(noteId)
   }
 
   return (
@@ -275,6 +301,9 @@ function BoardWithActions({
       canAddNote={canAddNote}
       addNoteHint={addNoteHint}
       addNoteTitle={addNoteTitle}
+      addNoteLabel={addNoteLabel}
+      addNoteLimit={addNoteLimit}
+      addNoteShortLabel={addNoteShortLabel}
     >
       <Tldraw
         licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY}
@@ -293,6 +322,9 @@ function BoardWithActions({
           canAddNote={canAddNote}
           addNoteHint={addNoteHint}
           addNoteTitle={addNoteTitle}
+          addNoteLabel={addNoteLabel}
+          addNoteLimit={addNoteLimit}
+          addNoteShortLabel={addNoteShortLabel}
           onEditProfile={onEditProfile}
         />
       </Tldraw>

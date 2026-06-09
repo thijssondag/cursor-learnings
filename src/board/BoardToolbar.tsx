@@ -32,7 +32,7 @@ import { useBoardActions } from '../context/BoardActionsContext'
 import { useToolbarAppearAnimation } from './useToolbarAppearAnimation'
 
 export function BoardToolbar() {
-  const { onAddNote, canAddNote } = useBoardActions()
+  const { onAddNote, canAddNote, addNoteLabel, addNoteLimit } = useBoardActions()
   useToolbarAppearAnimation()
 
   return (
@@ -43,7 +43,7 @@ export function BoardToolbar() {
       <EraserToolbarItem />
       <TldrawUiMenuItem
         id="add-tip-note"
-        label="Add your tip (1 per person)"
+        label={`${addNoteLabel}${addNoteLimit}`}
         icon="tool-note"
         kbd="n"
         onSelect={() => {

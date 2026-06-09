@@ -12,6 +12,7 @@ import {
   isNoteDragging,
   isNoteJustCreated,
   markRemoteNoteAppear,
+  setEditingNoteId,
   setNoteDragging,
 } from '../lib/editingState'
 import type { NoteShape } from './NoteShapeUtil'
@@ -144,8 +145,12 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
           if (!note) continue
 
           if (shape.x !== note.x || shape.y !== note.y) {
-            setNoteDragging(shape.props.noteId, true)
-            pendingMoves.set(shape.props.noteId, {
+            const { noteId } = shape.props
+            setNoteDragging(noteId, true)
+            if (getEditingNoteId() === noteId) {
+              setEditingNoteId(null)
+            }
+            pendingMoves.set(noteId, {
               x: shape.x,
               y: shape.y,
             })
@@ -156,15 +161,25 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
     )
 
     const flushPendingMoves = () => {
-      for (const [noteId, { x, y }] of pendingMoves) {
-        void moveNote({
-          noteId: noteId as Id<'notes'>,
-          x,
-          y,
-        })
-      }
+      const moves = Array.from(pendingMoves.entries())
+      if (moves.length === 0) return
       pendingMoves.clear()
-      clearDraggingNotes()
+
+      void Promise.all(
+        moves.map(async ([noteId, { x, y }]) => {
+          try {
+            await moveNote({
+              noteId: noteId as Id<'notes'>,
+              x,
+              y,
+            })
+          } catch (err) {
+            console.error('Failed to move note:', err)
+          } finally {
+            setNoteDragging(noteId, false)
+          }
+        }),
+      )
     }
 
     window.addEventListener('pointerup', flushPendingMoves)

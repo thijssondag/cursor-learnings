@@ -18,7 +18,7 @@ export function ThemeToggle() {
       onClick={cyclePreference}
       title={`Theme: ${LABELS[preference]}. Click to change.`}
       aria-label={`Theme: ${LABELS[preference]}. Click to change.`}
-      className="theme-toggle"
+      className="top-bar__btn top-bar__btn--secondary theme-toggle"
     >
       <ThemeIcon preference={preference} />
       <span className="theme-toggle__label">{LABELS[preference]}</span>

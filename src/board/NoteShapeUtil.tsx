@@ -7,23 +7,23 @@ import {
   type RecordProps,
   type TLBaseShape,
 } from 'tldraw'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation } from 'convex/react'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { IconHeart, IconHeartFilled } from '@tabler/icons-react'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
-import { DeleteNoteButton } from '../components/DeleteConfirmModal'
 import { MotionButton } from '../components/MotionButton'
+import { NoteOwnerMenu } from '../components/NoteOwnerMenu'
 import { SocialIcons } from '../components/SocialIcons'
 import { useRequestDelete } from '../context/DeleteContext'
 import { useIdentity } from '../context/IdentityContext'
 import {
-  consumeFocusRequest,
   consumeNoteEntrance,
+  isNoteDragging,
   type NoteEntrance,
   setEditingNoteId,
+  subscribeEditingState,
 } from '../lib/editingState'
 import {
   EASE_OUT_QUINT,
@@ -36,9 +36,7 @@ import { iconProps } from '../lib/iconProps'
 import {
   DEFAULT_NOTE_COLOR,
   isNoteColorOrLegacy,
-  NOTE_COLORS,
   noteSurfaceStyles,
-  noteSwatchColor,
 } from '../lib/noteColors'
 
 export interface TipProps {
@@ -142,17 +140,10 @@ function NoteCard({ shape }: { shape: NoteShape }) {
 
   const [draft, setDraft] = useState(text)
   const [heartAnimating, setHeartAnimating] = useState(false)
-  const [showSwatches, setShowSwatches] = useState(false)
-  const [swatchPos, setSwatchPos] = useState<{ top: number; left: number; rotation: number } | null>(
-    null,
-  )
   const [entrance] = useState<NoteEntrance>(() => consumeNoteEntrance(noteId))
   const reduceMotion = useReducedMotion()
   const isFocused = useRef(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const colorSwatchRef = useRef<HTMLDivElement>(null)
-  const swatchPanelRef = useRef<HTMLDivElement>(null)
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const cardColor = isNoteColorOrLegacy(color)
     ? color
@@ -170,18 +161,16 @@ function NoteCard({ shape }: { shape: NoteShape }) {
   }, [text])
 
   useEffect(() => {
-    if (!isOwner || !textareaRef.current) return
-    const focusNote = () => {
-      if (consumeFocusRequest(noteId)) {
-        textareaRef.current?.focus()
+    if (!isOwner) return
+    let wasDragging = isNoteDragging(noteId)
+    return subscribeEditingState(() => {
+      const dragging = isNoteDragging(noteId)
+      if (dragging && !wasDragging) {
+        textareaRef.current?.blur()
       }
-    }
-    if (entrance === 'own' && !reduceMotion) {
-      const timer = window.setTimeout(focusNote, 150)
-      return () => window.clearTimeout(timer)
-    }
-    focusNote()
-  }, [isOwner, noteId, entrance, reduceMotion])
+      wasDragging = dragging
+    })
+  }, [isOwner, noteId])
 
   const persistText = useMemo(
     () =>
@@ -212,10 +201,6 @@ function NoteCard({ shape }: { shape: NoteShape }) {
     })
   }
 
-  useEffect(() => {
-    if (!isOwner) setShowSwatches(false)
-  }, [isOwner])
-
   const handleColorSelect = (nextColor: string) => {
     if (!isOwner || nextColor === cardColor) return
     void updateColor({
@@ -223,48 +208,7 @@ function NoteCard({ shape }: { shape: NoteShape }) {
       sessionId: identity.sessionId,
       color: nextColor,
     })
-    setShowSwatches(false)
   }
-
-  const openSwatches = useCallback(() => {
-    if (!isOwner) return
-    clearTimeout(closeTimerRef.current)
-    setShowSwatches(true)
-  }, [isOwner])
-
-  const closeSwatches = useCallback(() => {
-    closeTimerRef.current = setTimeout(() => setShowSwatches(false), 220)
-  }, [])
-
-  const updateSwatchPosition = useCallback(() => {
-    const anchor = colorSwatchRef.current
-    if (!anchor) return
-    const rect = anchor.getBoundingClientRect()
-    setSwatchPos({
-      top: rect.bottom + 6,
-      left: rect.left + rect.width / 2,
-      rotation: shape.rotation * (180 / Math.PI),
-    })
-  }, [shape.rotation])
-
-  useLayoutEffect(() => {
-    if (!showSwatches) {
-      setSwatchPos(null)
-      return
-    }
-    updateSwatchPosition()
-    let frame = 0
-    const tick = () => {
-      updateSwatchPosition()
-      frame = requestAnimationFrame(tick)
-    }
-    frame = requestAnimationFrame(tick)
-    window.addEventListener('resize', updateSwatchPosition)
-    return () => {
-      cancelAnimationFrame(frame)
-      window.removeEventListener('resize', updateSwatchPosition)
-    }
-  }, [showSwatches, updateSwatchPosition])
 
   return (
     <>
@@ -314,6 +258,7 @@ function NoteCard({ shape }: { shape: NoteShape }) {
             style={{
               flexShrink: 0,
               height: 28,
+              position: 'relative',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -330,6 +275,15 @@ function NoteCard({ shape }: { shape: NoteShape }) {
           >
             <span style={{ fontSize: 14, lineHeight: 1 }}>⠿</span>
             <span>Drag</span>
+            {isOwner && (
+              <NoteOwnerMenu
+                cardColor={cardColor}
+                onColorSelect={handleColorSelect}
+                onDelete={() => {
+                  if (noteId) requestDelete(noteId)
+                }}
+              />
+            )}
           </div>
 
           <div
@@ -425,6 +379,7 @@ function NoteCard({ shape }: { shape: NoteShape }) {
                 alignItems: 'center',
                 minWidth: 0,
                 flex: 1,
+                gap: 4,
                 pointerEvents: 'auto',
               }}
               onPointerDown={stop}
@@ -436,6 +391,8 @@ function NoteCard({ shape }: { shape: NoteShape }) {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
+                  minWidth: 0,
+                  flex: '1 1 auto',
                 }}
               >
                 — {displayName}
@@ -447,68 +404,7 @@ function NoteCard({ shape }: { shape: NoteShape }) {
               />
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {isOwner && (
-                <div
-                  ref={colorSwatchRef}
-                  onMouseEnter={openSwatches}
-                  onMouseLeave={closeSwatches}
-                  style={{
-                    position: 'relative',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    pointerEvents: 'auto',
-                  }}
-                  onPointerDown={stop}
-                >
-                  <MotionButton
-                    type="button"
-                    variant="ghost"
-                    aria-label="Change card color"
-                    aria-expanded={showSwatches}
-                    onClick={() => {
-                      if (!isOwner) return
-                      setShowSwatches((v) => !v)
-                    }}
-                    className="note-color-btn"
-                    style={{
-                      width: 44,
-                      height: 44,
-                      minWidth: 44,
-                      minHeight: 44,
-                      padding: 0,
-                      borderRadius: '50%',
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                    whileHover={{ scale: 1.06 }}
-                    whileTap={{ scale: 0.94 }}
-                  >
-                    <span
-                      aria-hidden
-                      style={{
-                        width: 22,
-                        height: 22,
-                        borderRadius: '50%',
-                        background: noteSwatchColor(cardColor),
-                        border: '2px solid color-mix(in srgb, var(--color-text) 18%, transparent)',
-                      }}
-                    />
-                  </MotionButton>
-                </div>
-              )}
-              {isOwner && (
-                <DeleteNoteButton
-                  onClick={() => {
-                    if (noteId) requestDelete(noteId)
-                  }}
-                />
-              )}
+            <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               <MotionButton
                 type="button"
                 variant="ghost"
@@ -551,91 +447,6 @@ function NoteCard({ shape }: { shape: NoteShape }) {
           </div>
         </motion.div>
       </HTMLContainer>
-
-      {typeof document !== 'undefined' &&
-        createPortal(
-          <AnimatePresence>
-            {showSwatches && swatchPos && (
-              <motion.div
-                ref={swatchPanelRef}
-                key="note-swatch-picker"
-                initial={{ opacity: 0, y: -4, scale: 0.94, x: '-50%' }}
-                animate={{ opacity: 1, y: 0, scale: 1, x: '-50%' }}
-                exit={{ opacity: 0, y: -4, scale: 0.94, x: '-50%' }}
-                transition={{ type: 'spring', bounce: 0.15, visualDuration: 0.2 }}
-                role="radiogroup"
-                aria-label="Card color"
-                onPointerDown={stop}
-                onMouseEnter={openSwatches}
-                onMouseLeave={closeSwatches}
-                style={{
-                  position: 'fixed',
-                  top: swatchPos.top,
-                  left: swatchPos.left,
-                  rotate: swatchPos.rotation,
-                  transformOrigin: 'top center',
-                  display: 'flex',
-                  gap: 2,
-                  padding: '4px 7px',
-                  backgroundColor: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 20,
-                  boxShadow: 'var(--shadow-card)',
-                  pointerEvents: 'auto',
-                  zIndex: 10000,
-                  isolation: 'isolate',
-                }}
-              >
-                {NOTE_COLORS.map((swatch) => {
-                  const selected = swatch === cardColor
-                  return (
-                    <MotionButton
-                      key={swatch}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      aria-label={selected ? 'Current color' : 'Set color'}
-                      variant="ghost"
-                      onClick={() => handleColorSelect(swatch)}
-                      style={{
-                        width: 28,
-                        height: 28,
-                        minWidth: 28,
-                        minHeight: 28,
-                        padding: 0,
-                        borderRadius: '50%',
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <span
-                        aria-hidden
-                        style={{
-                          width: 15,
-                          height: 15,
-                          borderRadius: '50%',
-                          background: noteSwatchColor(swatch),
-                          border: selected
-                            ? '2px solid var(--color-text)'
-                            : '2px solid transparent',
-                          boxShadow: selected
-                            ? '0 0 0 2px var(--color-surface), 0 0 0 3.5px var(--color-text)'
-                            : 'none',
-                        }}
-                      />
-                    </MotionButton>
-                  )
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>,
-          document.body,
-        )}
     </>
   )
 }

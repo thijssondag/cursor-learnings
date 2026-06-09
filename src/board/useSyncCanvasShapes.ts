@@ -22,6 +22,26 @@ type ConvexCanvasShape = {
   updatedAt: number
 }
 
+type CanvasSyncRuntime = {
+  prepareCanvasClear: () => void
+  finishCanvasClear: () => void
+  cancelCanvasClear: () => void
+}
+
+let canvasSyncRuntime: CanvasSyncRuntime | null = null
+
+export function prepareCanvasClear() {
+  canvasSyncRuntime?.prepareCanvasClear()
+}
+
+export function finishCanvasClear() {
+  canvasSyncRuntime?.finishCanvasClear()
+}
+
+export function cancelCanvasClear() {
+  canvasSyncRuntime?.cancelCanvasClear()
+}
+
 function serializeCanvasShape(shape: TLShape) {
   return JSON.stringify({
     props: shape.props,
@@ -61,6 +81,7 @@ export function useSyncCanvasShapes(editor: Editor | null) {
   const removeShape = useMutation(api.drawings.remove)
 
   const isApplyingRemoteRef = useRef(false)
+  const isClearingRef = useRef(false)
   const previousPageIdRef = useRef<Id<'pages'> | null>(null)
   const lastPayloadRef = useRef(new Map<string, string>())
   const lastAppliedRemoteRef = useRef(new Map<string, string>())
@@ -68,10 +89,14 @@ export function useSyncCanvasShapes(editor: Editor | null) {
   const lastDrawShapeRef = useRef<TLShape | null>(null)
   const persistDrawRef = useRef<((shape: TLShape) => void) | null>(null)
   const persistStaticRef = useRef<((shape: TLShape) => void) | null>(null)
+  const cancelDrawRef = useRef<(() => void) | null>(null)
+  const cancelStaticRef = useRef<(() => void) | null>(null)
 
   const upsertNow = useCallback(
     (shape: TLShape) => {
-      if (!currentPageId || !isCanvasShape(shape)) return
+      if (isClearingRef.current) return
+      if (!editor || !currentPageId || !isCanvasShape(shape)) return
+      if (!editor.getShape(shape.id)) return
 
       const data = serializeCanvasShape(shape)
       const key = `${shape.id}:${data}`
@@ -91,27 +116,59 @@ export function useSyncCanvasShapes(editor: Editor | null) {
         lastPayloadRef.current.delete(shape.id)
       })
     },
-    [upsertShape, currentPageId],
+    [editor, upsertShape, currentPageId],
   )
 
   useEffect(() => {
-    persistDrawRef.current = throttle(
+    const persistDraw = throttle(
       (shape: TLShape) => upsertNow(shape),
       DRAW_THROTTLE_MS,
     )
-    persistStaticRef.current = throttle(
+    const persistStatic = throttle(
       (shape: TLShape) => upsertNow(shape),
       STATIC_THROTTLE_MS,
     )
+    persistDrawRef.current = persistDraw
+    persistStaticRef.current = persistStatic
+    cancelDrawRef.current = persistDraw.cancel
+    cancelStaticRef.current = persistStatic.cancel
   }, [upsertNow])
 
   const persistShape = useCallback((shape: TLShape) => {
+    if (isClearingRef.current) return
     if (!isCanvasShape(shape)) return
     if (shape.type === 'draw') {
       lastDrawShapeRef.current = shape
       persistDrawRef.current?.(shape)
     } else {
       persistStaticRef.current?.(shape)
+    }
+  }, [])
+
+  useEffect(() => {
+    canvasSyncRuntime = {
+      prepareCanvasClear: () => {
+        isClearingRef.current = true
+        isApplyingRemoteRef.current = true
+        lastDrawShapeRef.current = null
+        cancelDrawRef.current?.()
+        cancelStaticRef.current?.()
+      },
+      finishCanvasClear: () => {
+        lastPayloadRef.current.clear()
+        lastAppliedRemoteRef.current.clear()
+        lastRemoteVersionRef.current = ''
+        isApplyingRemoteRef.current = false
+        isClearingRef.current = false
+      },
+      cancelCanvasClear: () => {
+        isApplyingRemoteRef.current = false
+        isClearingRef.current = false
+      },
+    }
+
+    return () => {
+      canvasSyncRuntime = null
     }
   }, [])
 
@@ -210,13 +267,14 @@ export function useSyncCanvasShapes(editor: Editor | null) {
     if (!editor || !currentPageId) return
 
     const persistRemove = (shapeId: string) => {
+      if (isClearingRef.current) return
       lastPayloadRef.current.delete(shapeId)
       void removeShape({ pageId: currentPageId, shapeId })
     }
 
     const dispose = editor.store.listen(
       (entry) => {
-        if (isApplyingRemoteRef.current) return
+        if (isApplyingRemoteRef.current || isClearingRef.current) return
 
         for (const record of Object.values(entry.changes.added)) {
           if (record.typeName !== 'shape') continue
@@ -244,9 +302,11 @@ export function useSyncCanvasShapes(editor: Editor | null) {
     )
 
     const flushActiveDraw = () => {
+      if (isClearingRef.current) return
       const shape = lastDrawShapeRef.current
-      if (shape) upsertNow(shape)
       lastDrawShapeRef.current = null
+      if (!shape || !editor.getShape(shape.id)) return
+      upsertNow(shape)
     }
 
     window.addEventListener('pointerup', flushActiveDraw)

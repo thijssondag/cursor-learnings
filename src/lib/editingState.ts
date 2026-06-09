@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 
 let editingNoteId: string | null = null
 const draggingNoteIds = new Set<string>()
-let focusNoteId: string | null = null
 const justCreatedNoteIds = new Set<string>()
 const remoteAppearNoteIds = new Set<string>()
 const listeners = new Set<() => void>()
@@ -52,18 +51,6 @@ export function isNoteDragging(noteId: string): boolean {
 
 export function clearDraggingNotes() {
   draggingNoteIds.clear()
-}
-
-export function requestNoteFocus(noteId: string) {
-  focusNoteId = noteId
-}
-
-export function consumeFocusRequest(noteId: string): boolean {
-  if (focusNoteId === noteId) {
-    focusNoteId = null
-    return true
-  }
-  return false
 }
 
 export function markNoteJustCreated(noteId: string) {
@@ -117,32 +104,67 @@ export function hasUnfinishedOwnedNote(
   )
 }
 
+export interface AddNoteAvailability {
+  canAddNote: boolean
+  hint: string
+  enabledTitle: string
+  addNoteLabel: string
+  addNoteLimit: string
+  addNoteShortLabel: string
+}
+
+function addNoteLabels(isSingleNotePage: boolean) {
+  if (isSingleNotePage) {
+    return {
+      addNoteLabel: 'Add your tip',
+      addNoteLimit: ' · 1 per person',
+      addNoteShortLabel: 'Your tip',
+      enabledTitle: 'One tip per person on this board',
+    }
+  }
+  return {
+    addNoteLabel: 'Add note',
+    addNoteLimit: '',
+    addNoteShortLabel: 'Add note',
+    enabledTitle: 'Add a note to this board',
+  }
+}
+
 export function getAddNoteAvailability(
   notes: NoteForState[] | undefined,
   editingId: string | null,
-): { canAddNote: boolean; hint: string; enabledTitle: string } {
-  const enabledTitle = 'One tip per person on this board'
+  isSingleNotePage: boolean,
+): AddNoteAvailability {
+  const labels = addNoteLabels(isSingleNotePage)
 
   if (!notes) {
-    return { canAddNote: false, hint: 'Loading board…', enabledTitle }
-  }
-
-  const ownedNotes = notes.filter((n) => n.isOwner)
-  if (ownedNotes.length === 0) {
-    return { canAddNote: true, hint: enabledTitle, enabledTitle }
+    return {
+      canAddNote: false,
+      hint: 'Loading board…',
+      ...labels,
+    }
   }
 
   if (hasUnfinishedOwnedNote(notes, editingId)) {
     return {
       canAddNote: false,
       hint: 'Finish or delete your note first',
-      enabledTitle,
+      ...labels,
     }
+  }
+
+  const ownedNotes = notes.filter((n) => n.isOwner)
+  if (ownedNotes.length === 0) {
+    return { canAddNote: true, hint: labels.enabledTitle, ...labels }
+  }
+
+  if (!isSingleNotePage) {
+    return { canAddNote: true, hint: labels.enabledTitle, ...labels }
   }
 
   return {
     canAddNote: false,
     hint: 'One tip per person — you already shared yours',
-    enabledTitle,
+    ...labels,
   }
 }

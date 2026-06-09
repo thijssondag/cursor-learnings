@@ -9,6 +9,9 @@ export function TopBar({
   canAddNote,
   addNoteHint,
   addNoteTitle,
+  addNoteLabel,
+  addNoteLimit,
+  addNoteShortLabel,
   onEditProfile,
 }: {
   onAddNote: () => void
@@ -16,6 +19,9 @@ export function TopBar({
   canAddNote: boolean
   addNoteHint: string
   addNoteTitle: string
+  addNoteLabel: string
+  addNoteLimit: string
+  addNoteShortLabel: string
   onEditProfile: () => void
 }) {
   const { onlineCount } = usePresenceContext()
@@ -24,7 +30,7 @@ export function TopBar({
     <div className="top-bar">
       <div className="top-bar__inner">
         <div className="top-bar__brand">
-          <PageMenu onEditProfile={onEditProfile} />
+          <PageMenu />
         </div>
 
         <div className="top-bar__meta">
@@ -50,11 +56,11 @@ export function TopBar({
           <MotionButton
             type="button"
             onClick={onClearDrawings}
-            aria-label="Clear canvas"
+            aria-label="Clear drawings"
             className="top-bar__btn top-bar__btn--secondary"
           >
             <span className="top-bar__btn-label top-bar__btn-label--long" aria-hidden>
-              Clear canvas
+              Clear Drawings
             </span>
             <span className="top-bar__btn-label top-bar__btn-label--short" aria-hidden>
               Clear
@@ -65,22 +71,20 @@ export function TopBar({
             onClick={canAddNote ? onAddNote : undefined}
             disabled={!canAddNote}
             title={canAddNote ? addNoteTitle : addNoteHint}
-            aria-label={
-              canAddNote
-                ? 'Add your tip — one per person'
-                : addNoteHint
-            }
+            aria-label={canAddNote ? addNoteTitle : addNoteHint}
             className="top-bar__btn top-bar__btn--primary"
           >
             <span className="top-bar__btn-icon" aria-hidden>
               +
             </span>
             <span className="top-bar__btn-label top-bar__btn-label--long" aria-hidden>
-              Add your tip
-              <span className="top-bar__btn-limit"> · 1 per person</span>
+              {addNoteLabel}
+              {addNoteLimit ? (
+                <span className="top-bar__btn-limit">{addNoteLimit}</span>
+              ) : null}
             </span>
             <span className="top-bar__btn-label top-bar__btn-label--short" aria-hidden>
-              Your tip
+              {addNoteShortLabel}
             </span>
           </MotionButton>
         </div>

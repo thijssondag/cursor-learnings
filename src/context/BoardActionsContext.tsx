@@ -6,6 +6,9 @@ interface BoardActionsContextValue {
   canAddNote: boolean
   addNoteHint: string
   addNoteTitle: string
+  addNoteLabel: string
+  addNoteLimit: string
+  addNoteShortLabel: string
 }
 
 const BoardActionsContext = createContext<BoardActionsContextValue | null>(null)
@@ -15,11 +18,22 @@ export function BoardActionsProvider({
   canAddNote,
   addNoteHint,
   addNoteTitle,
+  addNoteLabel,
+  addNoteLimit,
+  addNoteShortLabel,
   children,
 }: BoardActionsContextValue & { children: React.ReactNode }) {
   return (
     <BoardActionsContext.Provider
-      value={{ onAddNote, canAddNote, addNoteHint, addNoteTitle }}
+      value={{
+        onAddNote,
+        canAddNote,
+        addNoteHint,
+        addNoteTitle,
+        addNoteLabel,
+        addNoteLimit,
+        addNoteShortLabel,
+      }}
     >
       {children}
     </BoardActionsContext.Provider>

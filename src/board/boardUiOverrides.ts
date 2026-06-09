@@ -11,20 +11,22 @@ const REMOVED_TOOLS = [
   'embed',
 ] as const
 
-export const boardUiOverrides: TLUiOverrides = {
-  tools(_editor, tools) {
-    for (const id of REMOVED_TOOLS) {
-      delete tools[id]
-    }
-    tools['add-tip-note'] = {
-      id: 'add-tip-note',
-      icon: 'tool-note',
-      label: 'Add your tip (1 per person)',
-      kbd: 'n',
-      onSelect: () => {
-        // Handled by BoardToolbar TldrawUiMenuItem onSelect
-      },
-    }
-    return tools
-  },
+export function createBoardUiOverrides(addNoteToolLabel: string): TLUiOverrides {
+  return {
+    tools(_editor, tools) {
+      for (const id of REMOVED_TOOLS) {
+        delete tools[id]
+      }
+      tools['add-tip-note'] = {
+        id: 'add-tip-note',
+        icon: 'tool-note',
+        label: addNoteToolLabel,
+        kbd: 'n',
+        onSelect: () => {
+          // Handled by BoardToolbar TldrawUiMenuItem onSelect
+        },
+      }
+      return tools
+    },
+  }
 }

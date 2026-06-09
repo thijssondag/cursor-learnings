@@ -2,6 +2,36 @@
 
 All notable changes to the Cursor Learnings Board are documented here.
 
+## [0.0.7] — 2026-06-09
+
+Fix newly created note not draggable (by Thijs / agent).
+
+### Fixed
+
+- **Note drag on create:** Removed auto-focus on the textarea after adding a note. The focused input was consuming the first pointer interaction on the drag header, so users had to click the canvas once before a note could move.
+- **Note move sync:** Keep drag state until the Convex `moveNote` mutation finishes, preventing position snap-back on pointer-up.
+- **Clear drawings:** Strokes no longer reappear after clearing when clicking the canvas. Outbound sync is paused during clear, stale draw refs are dropped, and Convex is cleared before local shapes are removed.
+
+## [0.0.6] — 2026-06-09
+
+Page-specific note limits (by Thijs / agent).
+
+### Changed
+
+- **Cursor Learnings:** Still one tip per person; button shows "Add your tip · 1 per person".
+- **Project pages:** Unlimited notes per person; button shows "Add note" without the per-person limit.
+- **Both page types:** Users must finish or delete an in-progress note before adding another.
+
+## [0.0.5] — 2026-06-09
+
+Note card owner menu and page menu cleanup (by Thijs / agent).
+
+### Changed
+
+- **Note options:** Moved color picker and delete into a three-dot menu in the top-right of owned notes, freeing footer space for author name and LinkedIn/X links.
+- **Page menu:** Removed duplicate "Edit profile" from the pages dropdown; it remains next to the online count in the top bar.
+- **Top bar:** Theme toggle matches pill button sizing; "Clear canvas" renamed to "Clear Drawings".
+
 ## [0.0.4] — 2026-06-09
 
 Favicon update (by Thijs / agent).

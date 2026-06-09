@@ -56,7 +56,7 @@ export function ClearCanvasModal({
             cursor: isClearing ? 'wait' : 'pointer',
           }}
         >
-          {isClearing ? 'Clearing…' : 'Clear canvas'}
+          {isClearing ? 'Clearing…' : 'Clear drawings'}
         </button>
       </div>
     </Modal>

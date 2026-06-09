@@ -8,7 +8,7 @@ import { iconProps } from '../lib/iconProps'
 import { inputStyle } from '../lib/uiStyles'
 import { MotionButton } from './MotionButton'
 
-export function PageMenu({ onEditProfile }: { onEditProfile?: () => void }) {
+export function PageMenu() {
   const { pages, currentPage, currentPageId, setCurrentPageId, createPage, renamePage, deletePage } =
     usePageContext()
   const [open, setOpen] = useState(false)
@@ -288,22 +288,6 @@ export function PageMenu({ onEditProfile }: { onEditProfile?: () => void }) {
               New page
             </MotionButton>
           )}
-          {onEditProfile && (
-            <>
-              <div style={{ height: 1, background: 'var(--color-border)', margin: '6px 0' }} />
-              <MotionButton
-                type="button"
-                onClick={() => {
-                  onEditProfile()
-                  closeMenu()
-                }}
-                className="page-menu__edit-profile"
-              >
-                Edit profile
-              </MotionButton>
-            </>
-          )}
-
           <div
             aria-hidden
             style={{

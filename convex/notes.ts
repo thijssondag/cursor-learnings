@@ -56,12 +56,17 @@ export const create = mutation({
     const authorName = args.authorName.trim()
     if (!authorName) throw new Error('Name is required to create a note')
 
-    const pageNotes = await ctx.db
-      .query('notes')
-      .withIndex('by_page', (q) => q.eq('pageId', args.pageId))
-      .collect()
-    if (pageNotes.some((note) => note.authorSessionId === args.sessionId)) {
-      throw new Error('One tip per person on each page')
+    const page = await ctx.db.get(args.pageId)
+    if (!page) throw new Error('Page not found')
+
+    if (page.isLocked) {
+      const pageNotes = await ctx.db
+        .query('notes')
+        .withIndex('by_page', (q) => q.eq('pageId', args.pageId))
+        .collect()
+      if (pageNotes.some((note) => note.authorSessionId === args.sessionId)) {
+        throw new Error('One tip per person on each page')
+      }
     }
 
     if (!(NOTE_COLORS as readonly string[]).includes(args.color)) {
