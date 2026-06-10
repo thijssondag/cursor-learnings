@@ -56,19 +56,17 @@ export function TopBar({
         </div>
 
         <div className="top-bar__actions">
-          <Button
+          <MotionButton
             type="button"
-            color="secondary"
-            size="sm"
             onClick={onFitAll}
             aria-label="Fit all notes in view"
-            className="top-bar__action-btn top-bar__fit-btn"
+            className="top-bar__btn top-bar__btn--secondary top-bar__fit-btn"
           >
             <IconArrowsMaximize {...iconProps(16)} aria-hidden />
             <span className="top-bar__btn-label top-bar__btn-label--short" aria-hidden>
               Fit
             </span>
-          </Button>
+          </MotionButton>
           <ThemeToggle />
           <MotionButton
             type="button"

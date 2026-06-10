@@ -267,7 +267,7 @@ function BoardWithActions({
   useCursorBroadcast(editor, identity)
 
   const contentVersion = notes?.length ?? 0
-  useMobileCameraFit(editor, currentPageId, contentVersion)
+  useMobileCameraFit(editor, currentPageId ?? undefined, contentVersion)
 
   const handleFitAll = useCallback(() => {
     if (editor) fitPageToViewport(editor)
