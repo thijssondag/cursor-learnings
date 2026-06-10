@@ -4,6 +4,14 @@ import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
 import type { Identity } from '../lib/identity'
+import {
+  findPageIdBySlug,
+  getPageSlug,
+  getPageSlugFromSearch,
+  syncPageSlugInUrl,
+} from '../lib/pageSlugs'
+
+export type PageKind = 'tip' | 'buildPlan'
 
 export interface BoardPage {
   _id: Id<'pages'>
@@ -11,6 +19,7 @@ export interface BoardPage {
   authorSessionId: string
   authorName: string
   isLocked: boolean
+  pageKind: PageKind
   createdAt: number
   isOwner: boolean
   canDelete: boolean
@@ -49,11 +58,28 @@ export function PageProvider({
 
   const defaultPageId = useMemo(() => {
     if (!bootstrapped || !pages?.length) return null
-    return (pages.find((p) => p.isLocked) ?? pages[0])._id
+    const learnings = pages.find((p) => p.name === 'Cursor Learnings')
+    if (learnings) return learnings._id
+    const locked = pages.find((p) => p.isLocked)
+    if (locked) return locked._id
+    return pages[0]._id
   }, [bootstrapped, pages])
 
-  const currentPageId = selectedPageId ?? defaultPageId
+  const deepLinkedPageId = useMemo(() => {
+    if (!bootstrapped || !pages?.length) return null
+    const slug = getPageSlugFromSearch(window.location.search)
+    if (!slug) return null
+    return findPageIdBySlug(pages, slug)
+  }, [bootstrapped, pages])
+
+  const currentPageId = selectedPageId ?? deepLinkedPageId ?? defaultPageId
   const currentPage = pages?.find((p) => p._id === currentPageId)
+
+  const setCurrentPageId = (id: Id<'pages'>) => {
+    setSelectedPageId(id)
+    const page = pages?.find((p) => p._id === id)
+    syncPageSlugInUrl(page ? getPageSlug(page) : null)
+  }
 
   const createPage = async (name?: string) => {
     const id = await createPageMutation({
@@ -88,7 +114,7 @@ export function PageProvider({
         pages,
         currentPageId,
         currentPage,
-        setCurrentPageId: setSelectedPageId,
+        setCurrentPageId,
         createPage,
         renamePage,
         deletePage,

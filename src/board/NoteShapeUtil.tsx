@@ -18,6 +18,7 @@ import { NoteOwnerMenu } from '../components/NoteOwnerMenu'
 import { SocialIcons } from '../components/SocialIcons'
 import { useRequestDelete } from '../context/DeleteContext'
 import { useIdentity } from '../context/IdentityContext'
+import { usePageContext } from '../context/PageContext'
 import {
   consumeNoteEntrance,
   isNoteDragging,
@@ -44,6 +45,8 @@ export interface TipProps {
   h: number
   noteId: string
   text: string
+  project: string
+  supportQuestion: string
   color: string
   authorName: string
   authorXHandle: string
@@ -69,6 +72,8 @@ export class NoteShapeUtil extends ShapeUtil<NoteShape> {
     h: T.number,
     noteId: T.string,
     text: T.string,
+    project: T.string,
+    supportQuestion: T.string,
     color: T.string,
     authorName: T.string,
     authorXHandle: T.string,
@@ -84,6 +89,8 @@ export class NoteShapeUtil extends ShapeUtil<NoteShape> {
       h: 168,
       noteId: '',
       text: '',
+      project: '',
+      supportQuestion: '',
       color: DEFAULT_NOTE_COLOR,
       authorName: '',
       authorXHandle: '',
@@ -118,11 +125,35 @@ export class NoteShapeUtil extends ShapeUtil<NoteShape> {
   }
 }
 
+const fieldLabelStyle: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 600,
+  color: 'var(--color-text-muted)',
+  letterSpacing: '0.02em',
+  marginBottom: 4,
+  userSelect: 'none',
+}
+
+const textareaStyle: React.CSSProperties = {
+  width: '100%',
+  resize: 'none',
+  border: 'none',
+  outline: 'none',
+  background: 'transparent',
+  color: 'var(--color-text)',
+  fontSize: 14,
+  lineHeight: 1.4,
+  fontFamily: 'inherit',
+  pointerEvents: 'auto',
+}
+
 function NoteCard({ shape }: { shape: NoteShape }) {
   const {
     w,
     h,
     text,
+    project,
+    supportQuestion,
     color,
     authorName,
     authorXHandle,
@@ -133,12 +164,16 @@ function NoteCard({ shape }: { shape: NoteShape }) {
     noteId,
   } = shape.props
   const identity = useIdentity()
+  const { currentPage } = usePageContext()
+  const pageKind = currentPage?.pageKind ?? 'tip'
   const requestDelete = useRequestDelete()
   const toggleHeart = useMutation(api.hearts.toggle)
   const updateNote = useMutation(api.notes.update)
   const updateColor = useMutation(api.notes.updateColor)
 
-  const [draft, setDraft] = useState(text)
+  const [draftText, setDraftText] = useState(text)
+  const [draftProject, setDraftProject] = useState(project)
+  const [draftSupport, setDraftSupport] = useState(supportQuestion)
   const [heartAnimating, setHeartAnimating] = useState(false)
   const [entrance] = useState<NoteEntrance>(() => consumeNoteEntrance(noteId))
   const reduceMotion = useReducedMotion()
@@ -157,8 +192,12 @@ function NoteCard({ shape }: { shape: NoteShape }) {
     : authorLinkedInUrl || undefined
 
   useEffect(() => {
-    if (!isFocused.current) setDraft(text)
-  }, [text])
+    if (!isFocused.current) {
+      setDraftText(text)
+      setDraftProject(project)
+      setDraftSupport(supportQuestion)
+    }
+  }, [text, project, supportQuestion])
 
   useEffect(() => {
     if (!isOwner) return
@@ -179,6 +218,30 @@ function NoteCard({ shape }: { shape: NoteShape }) {
           noteId: id as Id<'notes'>,
           sessionId: identity.sessionId,
           text: value,
+        })
+      }, 400),
+    [updateNote, identity.sessionId],
+  )
+
+  const persistProject = useMemo(
+    () =>
+      throttle((id: string, value: string) => {
+        void updateNote({
+          noteId: id as Id<'notes'>,
+          sessionId: identity.sessionId,
+          project: value,
+        })
+      }, 400),
+    [updateNote, identity.sessionId],
+  )
+
+  const persistSupport = useMemo(
+    () =>
+      throttle((id: string, value: string) => {
+        void updateNote({
+          noteId: id as Id<'notes'>,
+          sessionId: identity.sessionId,
+          supportQuestion: value,
         })
       }, 400),
     [updateNote, identity.sessionId],
@@ -208,6 +271,201 @@ function NoteCard({ shape }: { shape: NoteShape }) {
       sessionId: identity.sessionId,
       color: nextColor,
     })
+  }
+
+  const handleFocus = () => {
+    isFocused.current = true
+    setEditingNoteId(noteId)
+  }
+
+  const handleBlurTip = () => {
+    isFocused.current = false
+    setEditingNoteId(null)
+    void updateNote({
+      noteId: noteId as Id<'notes'>,
+      sessionId: identity.sessionId,
+      text: draftText,
+    })
+  }
+
+  const handleBlurBuildPlan = () => {
+    isFocused.current = false
+    setEditingNoteId(null)
+    void updateNote({
+      noteId: noteId as Id<'notes'>,
+      sessionId: identity.sessionId,
+      project: draftProject,
+      supportQuestion: draftSupport,
+    })
+  }
+
+  const renderTipContent = () => {
+    if (isOwner) {
+      return (
+        <textarea
+          ref={textareaRef}
+          value={draftText}
+          onChange={(e) => {
+            setDraftText(e.target.value)
+            persistText(noteId, e.target.value)
+          }}
+          onFocus={handleFocus}
+          onBlur={handleBlurTip}
+          onPointerDown={stop}
+          placeholder="Share your best Cursor tip…"
+          style={{ ...textareaStyle, flex: 1 }}
+        />
+      )
+    }
+    return (
+      <>
+        <div
+          style={{
+            flex: 1,
+            color: 'var(--color-text)',
+            fontSize: 14,
+            lineHeight: 1.4,
+            whiteSpace: 'pre-wrap',
+            overflow: 'hidden',
+            userSelect: 'none',
+          }}
+        >
+          {text}
+        </div>
+        <div
+          aria-hidden
+          onPointerDown={blockForeignInteraction}
+          onDoubleClick={blockForeignInteraction}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            cursor: 'default',
+            pointerEvents: 'auto',
+          }}
+        />
+      </>
+    )
+  }
+
+  const renderBuildPlanContent = () => {
+    if (isOwner) {
+      return (
+        <>
+          <div
+            style={{
+              flex: '0 1 auto',
+              minHeight: 0,
+              maxHeight: '38%',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div style={fieldLabelStyle}>What are you building?</div>
+            <textarea
+              value={draftProject}
+              onChange={(e) => {
+                setDraftProject(e.target.value)
+                persistProject(noteId, e.target.value)
+              }}
+              onFocus={handleFocus}
+              onBlur={handleBlurBuildPlan}
+              onPointerDown={stop}
+              placeholder="My project idea…"
+              style={{ ...textareaStyle, flex: 1, minHeight: 52, maxHeight: 72 }}
+            />
+          </div>
+          <div
+            style={{
+              height: 1,
+              background: surface.borderColor,
+              margin: '6px 0',
+              flexShrink: 0,
+            }}
+          />
+          <div
+            style={{
+              flex: '1 1 62%',
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div style={fieldLabelStyle}>What support are you looking for?</div>
+            <textarea
+              value={draftSupport}
+              onChange={(e) => {
+                setDraftSupport(e.target.value)
+                persistSupport(noteId, e.target.value)
+              }}
+              onFocus={handleFocus}
+              onBlur={handleBlurBuildPlan}
+              onPointerDown={stop}
+              placeholder="Pairing on X, feedback on Y…"
+              style={{ ...textareaStyle, flex: 1, minHeight: 110 }}
+            />
+          </div>
+        </>
+      )
+    }
+
+    return (
+      <>
+        <div style={{ flex: '0 1 auto', minHeight: 0, maxHeight: '38%' }}>
+          <div style={fieldLabelStyle}>What are you building?</div>
+          <div
+            style={{
+              color: 'var(--color-text)',
+              fontSize: 14,
+              lineHeight: 1.4,
+              whiteSpace: 'pre-wrap',
+              overflow: 'auto',
+              userSelect: 'none',
+            }}
+          >
+            {project}
+          </div>
+        </div>
+        {supportQuestion.trim() && (
+          <>
+            <div
+              style={{
+                height: 1,
+                background: surface.borderColor,
+                margin: '6px 0',
+                flexShrink: 0,
+              }}
+            />
+            <div style={{ flex: '1 1 62%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div style={fieldLabelStyle}>What support are you looking for?</div>
+              <div
+                style={{
+                  flex: 1,
+                  color: 'var(--color-text)',
+                  fontSize: 14,
+                  lineHeight: 1.4,
+                  whiteSpace: 'pre-wrap',
+                  overflow: 'auto',
+                  userSelect: 'none',
+                }}
+              >
+                {supportQuestion}
+              </div>
+            </div>
+          </>
+        )}
+        <div
+          aria-hidden
+          onPointerDown={blockForeignInteraction}
+          onDoubleClick={blockForeignInteraction}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            cursor: 'default',
+            pointerEvents: 'auto',
+          }}
+        />
+      </>
+    )
   }
 
   return (
@@ -296,71 +554,7 @@ function NoteCard({ shape }: { shape: NoteShape }) {
               position: 'relative',
             }}
           >
-            {isOwner ? (
-              <textarea
-                ref={textareaRef}
-                value={draft}
-                onChange={(e) => {
-                  setDraft(e.target.value)
-                  persistText(noteId, e.target.value)
-                }}
-                onFocus={() => {
-                  isFocused.current = true
-                  setEditingNoteId(noteId)
-                }}
-                onBlur={() => {
-                  isFocused.current = false
-                  setEditingNoteId(null)
-                  void updateNote({
-                    noteId: noteId as Id<'notes'>,
-                    sessionId: identity.sessionId,
-                    text: draft,
-                  })
-                }}
-                onPointerDown={stop}
-                placeholder="Share your best Cursor tip…"
-                style={{
-                  flex: 1,
-                  width: '100%',
-                  resize: 'none',
-                  border: 'none',
-                  outline: 'none',
-                  background: 'transparent',
-                  color: 'var(--color-text)',
-                  fontSize: 14,
-                  lineHeight: 1.4,
-                  fontFamily: 'inherit',
-                  pointerEvents: 'auto',
-                }}
-              />
-            ) : (
-              <>
-                <div
-                  style={{
-                    flex: 1,
-                    color: 'var(--color-text)',
-                    fontSize: 14,
-                    lineHeight: 1.4,
-                    whiteSpace: 'pre-wrap',
-                    overflow: 'hidden',
-                    userSelect: 'none',
-                  }}
-                >
-                  {text}
-                </div>
-                <div
-                  aria-hidden
-                  onPointerDown={blockForeignInteraction}
-                  onDoubleClick={blockForeignInteraction}
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    cursor: 'default',
-                    pointerEvents: 'auto',
-                  }}
-                />
-              </>
-            )}
+            {pageKind === 'buildPlan' ? renderBuildPlanContent() : renderTipContent()}
           </div>
 
           <div

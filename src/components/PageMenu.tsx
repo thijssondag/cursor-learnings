@@ -1,16 +1,45 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { IconDots, IconPencil, IconTrash } from '@tabler/icons-react'
+import {
+  IconArrowsMaximize,
+  IconDeviceDesktop,
+  IconDots,
+  IconEraser,
+  IconMoon,
+  IconPencil,
+  IconQrcode,
+  IconSun,
+  IconTrash,
+  IconUser,
+} from '@tabler/icons-react'
 import type { Id } from '../../convex/_generated/dataModel'
+import { useBoardActions } from '../context/BoardActionsContext'
 import { usePageContext, type BoardPage } from '../context/PageContext'
+import { useQrCode } from '../context/QrCodeContext'
+import { useTheme, type ThemePreference } from '../context/ThemeContext'
 import { APP_VERSION } from '../lib/constants'
 import { iconProps } from '../lib/iconProps'
 import { inputStyle } from '../lib/uiStyles'
 import { MotionButton } from './MotionButton'
 
-export function PageMenu() {
+const THEME_LABELS: Record<ThemePreference, string> = {
+  light: 'Light',
+  dark: 'Dark',
+  system: 'System',
+}
+
+export function PageMenu({
+  onEditProfile,
+  onClearDrawings,
+}: {
+  onEditProfile: () => void
+  onClearDrawings: () => void
+}) {
   const { pages, currentPage, currentPageId, setCurrentPageId, createPage, renamePage, deletePage } =
     usePageContext()
+  const { onFitAll } = useBoardActions()
+  const { preference, cyclePreference } = useTheme()
+  const { isQrVisible, toggleQr } = useQrCode()
   const [open, setOpen] = useState(false)
   const [creating, setCreating] = useState(false)
   const [newPageName, setNewPageName] = useState('')
@@ -250,7 +279,7 @@ export function PageMenu() {
             </div>
           ))}
 
-          <div style={{ height: 1, background: 'var(--color-border)', margin: '6px 0' }} />
+          <div className="page-menu__pages-divider" />
 
           {creating ? (
             <div style={{ padding: '4px 8px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -284,10 +313,73 @@ export function PageMenu() {
               </div>
             </div>
           ) : (
-            <MotionButton type="button" onClick={() => setCreating(true)} style={menuItemStyle}>
-              New page
+            <MotionButton
+              type="button"
+              onClick={() => setCreating(true)}
+              style={menuAddPageStyle}
+            >
+              + Add new page
             </MotionButton>
           )}
+
+          <div className="page-menu__mobile-actions-divider" />
+
+          <div className="page-menu__mobile-actions">
+            <MotionButton
+              type="button"
+              onClick={() => {
+                onEditProfile()
+                closeMenu()
+              }}
+              style={menuActionStyle}
+            >
+              <IconUser {...iconProps(16)} aria-hidden />
+              Edit profile
+            </MotionButton>
+            <MotionButton
+              type="button"
+              onClick={() => {
+                onFitAll()
+                closeMenu()
+              }}
+              style={menuActionStyle}
+            >
+              <IconArrowsMaximize {...iconProps(16)} aria-hidden />
+              Fit all notes
+            </MotionButton>
+            <MotionButton
+              type="button"
+              onClick={cyclePreference}
+              style={menuActionStyle}
+            >
+              <ThemeMenuIcon preference={preference} />
+              Theme: {THEME_LABELS[preference]}
+            </MotionButton>
+            <MotionButton
+              type="button"
+              onClick={toggleQr}
+              aria-pressed={isQrVisible}
+              style={{
+                ...menuActionStyle,
+                ...(isQrVisible ? menuActionActiveStyle : undefined),
+              }}
+            >
+              <IconQrcode {...iconProps(16)} aria-hidden />
+              {isQrVisible ? 'Hide QR code' : 'Show QR code'}
+            </MotionButton>
+            <MotionButton
+              type="button"
+              onClick={() => {
+                onClearDrawings()
+                closeMenu()
+              }}
+              style={menuActionStyle}
+            >
+              <IconEraser {...iconProps(16)} aria-hidden />
+              Clear drawings
+            </MotionButton>
+          </div>
+
           <div
             aria-hidden
             style={{
@@ -308,6 +400,12 @@ export function PageMenu() {
       )}
     </div>
   )
+}
+
+function ThemeMenuIcon({ preference }: { preference: ThemePreference }) {
+  if (preference === 'light') return <IconSun {...iconProps(16)} aria-hidden />
+  if (preference === 'dark') return <IconMoon {...iconProps(16)} aria-hidden />
+  return <IconDeviceDesktop {...iconProps(16)} aria-hidden />
 }
 
 const iconBtnStyle: React.CSSProperties = {
@@ -338,6 +436,23 @@ const menuItemStyle: React.CSSProperties = {
   fontFamily: 'var(--font-sans)',
   color: 'var(--color-text)',
   cursor: 'pointer',
+}
+
+const menuAddPageStyle: React.CSSProperties = {
+  ...menuItemStyle,
+  color: 'var(--color-text-muted)',
+}
+
+const menuActionStyle: React.CSSProperties = {
+  ...menuItemStyle,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+}
+
+const menuActionActiveStyle: React.CSSProperties = {
+  background: 'var(--color-surface-muted)',
+  color: 'var(--color-accent)',
 }
 
 const menuBtnBase: React.CSSProperties = {

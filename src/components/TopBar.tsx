@@ -1,9 +1,10 @@
-import { IconArrowsMaximize } from '@tabler/icons-react'
+import { IconArrowsMaximize, IconEraser } from '@tabler/icons-react'
 import { useBoardActions } from '../context/BoardActionsContext'
 import { usePresenceContext } from '../context/PresenceContext'
 import { iconProps } from '../lib/iconProps'
 import { PageMenu } from './PageMenu'
 import { ThemeToggle } from './ThemeToggle'
+import { QrCodeToggle } from './QrCodeToggle'
 import { MotionButton } from './MotionButton'
 
 export function TopBar({
@@ -33,61 +34,39 @@ export function TopBar({
   return (
     <div className="top-bar">
       <div className="top-bar__inner">
-        <div className="top-bar__brand">
-          <PageMenu />
-        </div>
+        <div className="top-bar__row top-bar__row--main">
+          <div className="top-bar__brand">
+            <PageMenu
+              onEditProfile={onEditProfile}
+              onClearDrawings={onClearDrawings}
+            />
+          </div>
 
-        <div className="top-bar__meta">
-          <span className="top-bar__online">
-            <span className="top-bar__online-dot" aria-hidden />
-            {onlineCount}
-            <span className="top-bar__online-suffix"> online</span>
-          </span>
-          <MotionButton
-            type="button"
-            variant="ghost"
-            onClick={onEditProfile}
-            className="top-bar__edit-profile"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            Edit profile
-          </MotionButton>
-        </div>
+          <div className="top-bar__meta">
+            <span className="top-bar__online">
+              <span className="top-bar__online-dot" aria-hidden />
+              {onlineCount}
+              <span className="top-bar__online-suffix"> online</span>
+            </span>
+            <MotionButton
+              type="button"
+              variant="ghost"
+              onClick={onEditProfile}
+              className="top-bar__edit-profile"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Edit profile
+            </MotionButton>
+          </div>
 
-        <div className="top-bar__actions">
-          <MotionButton
-            type="button"
-            onClick={onFitAll}
-            aria-label="Fit all notes in view"
-            className="top-bar__btn top-bar__btn--secondary top-bar__fit-btn"
-          >
-            <IconArrowsMaximize {...iconProps(16)} aria-hidden />
-            <span className="top-bar__btn-label top-bar__btn-label--short" aria-hidden>
-              Fit
-            </span>
-          </MotionButton>
-          <ThemeToggle />
-          <MotionButton
-            type="button"
-            onClick={onClearDrawings}
-            aria-label="Clear drawings"
-            className="top-bar__btn top-bar__btn--secondary"
-          >
-            <span className="top-bar__btn-label top-bar__btn-label--long" aria-hidden>
-              Clear Drawings
-            </span>
-            <span className="top-bar__btn-label top-bar__btn-label--short" aria-hidden>
-              Clear
-            </span>
-          </MotionButton>
           <MotionButton
             type="button"
             onClick={canAddNote ? onAddNote : undefined}
             disabled={!canAddNote}
             title={canAddNote ? addNoteTitle : addNoteHint}
             aria-label={canAddNote ? addNoteTitle : addNoteHint}
-            className="top-bar__btn top-bar__btn--primary"
+            className="top-bar__btn top-bar__btn--primary top-bar__add-btn"
           >
             <span className="top-bar__btn-icon" aria-hidden>
               +
@@ -100,6 +79,36 @@ export function TopBar({
             </span>
             <span className="top-bar__btn-label top-bar__btn-label--short" aria-hidden>
               {addNoteShortLabel}
+            </span>
+          </MotionButton>
+        </div>
+
+        <div className="top-bar__row top-bar__row--tools">
+          <MotionButton
+            type="button"
+            onClick={onFitAll}
+            aria-label="Fit all notes in view"
+            className="top-bar__btn top-bar__btn--secondary top-bar__fit-btn"
+          >
+            <IconArrowsMaximize {...iconProps(16)} aria-hidden />
+            <span className="top-bar__btn-label top-bar__btn-label--short" aria-hidden>
+              Fit
+            </span>
+          </MotionButton>
+          <ThemeToggle />
+          <QrCodeToggle />
+          <MotionButton
+            type="button"
+            onClick={onClearDrawings}
+            aria-label="Clear drawings"
+            className="top-bar__btn top-bar__btn--secondary"
+          >
+            <IconEraser {...iconProps(16)} className="top-bar__btn-icon-only" aria-hidden />
+            <span className="top-bar__btn-label top-bar__btn-label--long" aria-hidden>
+              Clear Drawings
+            </span>
+            <span className="top-bar__btn-label top-bar__btn-label--short" aria-hidden>
+              Clear
             </span>
           </MotionButton>
         </div>

@@ -9,6 +9,7 @@ export default defineSchema({
     authorSessionId: v.string(),
     authorName: v.string(),
     isLocked: v.boolean(),
+    pageKind: v.optional(v.union(v.literal('tip'), v.literal('buildPlan'))),
     createdAt: v.number(),
   }).index('by_locked', ['isLocked']),
 
@@ -19,6 +20,8 @@ export default defineSchema({
     authorXHandle: v.optional(v.string()),
     authorLinkedInUrl: v.optional(v.string()),
     text: v.string(),
+    project: v.optional(v.string()),
+    supportQuestion: v.optional(v.string()),
     x: v.number(),
     y: v.number(),
     rotation: v.number(),

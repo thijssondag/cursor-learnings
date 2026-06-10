@@ -1,23 +1,5 @@
 import { mutation } from './_generated/server'
-import type { Id } from './_generated/dataModel'
-import type { MutationCtx } from './_generated/server'
-
-async function getOrCreateMainPage(ctx: MutationCtx): Promise<Id<'pages'>> {
-  const lockedPages = await ctx.db
-    .query('pages')
-    .withIndex('by_locked', (q) => q.eq('isLocked', true))
-    .collect()
-
-  if (lockedPages.length > 0) return lockedPages[0]._id
-
-  return ctx.db.insert('pages', {
-    name: 'Cursor Learnings',
-    authorSessionId: 'system',
-    authorName: 'System',
-    isLocked: true,
-    createdAt: Date.now(),
-  })
-}
+import { getOrCreateMainPage } from './systemPages'
 
 /** One-time / rare admin backfill — not called from hot paths like bootstrap. */
 export const backfillDenormalized = mutation({

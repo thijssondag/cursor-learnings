@@ -5,6 +5,12 @@ import { createShapeId } from 'tldraw'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
 import type { Identity } from '../lib/identity'
+import {
+  BUILD_PLAN_NOTE_HEIGHT,
+  BUILD_PLAN_NOTE_WIDTH,
+  NOTE_HEIGHT,
+  NOTE_WIDTH,
+} from '../lib/constants'
 import { usePageContext } from '../context/PageContext'
 import {
   clearDraggingNotes,
@@ -20,6 +26,8 @@ import type { NoteShape } from './NoteShapeUtil'
 type ConvexNote = {
   _id: Id<'notes'>
   text: string
+  project: string
+  supportQuestion: string
   x: number
   y: number
   rotation: number
@@ -33,7 +41,13 @@ type ConvexNote = {
 }
 
 export function useSyncNotes(editor: Editor | null, identity: Identity) {
-  const { currentPageId } = usePageContext()
+  const { currentPageId, currentPage } = usePageContext()
+  const pageKind = currentPage?.pageKind ?? 'tip'
+  const noteWidth =
+    pageKind === 'buildPlan' ? BUILD_PLAN_NOTE_WIDTH : NOTE_WIDTH
+  const noteHeight =
+    pageKind === 'buildPlan' ? BUILD_PLAN_NOTE_HEIGHT : NOTE_HEIGHT
+
   const notes = useQuery(
     api.notes.list,
     currentPageId
@@ -77,10 +91,12 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
             y: n.y,
             rotation: n.rotation,
             props: {
-              w: 220,
-              h: 168,
+              w: noteWidth,
+              h: noteHeight,
               noteId: n._id,
               text: n.text,
+              project: n.project,
+              supportQuestion: n.supportQuestion,
               color: n.color,
               authorName: n.authorName,
               authorXHandle: n.authorXHandle,
@@ -95,6 +111,12 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
 
         const nextProps: Partial<NoteShape['props']> = {}
         if (n._id !== editingId && shape.props.text !== n.text) nextProps.text = n.text
+        if (n._id !== editingId && shape.props.project !== n.project) {
+          nextProps.project = n.project
+        }
+        if (n._id !== editingId && shape.props.supportQuestion !== n.supportQuestion) {
+          nextProps.supportQuestion = n.supportQuestion
+        }
         if (shape.props.heartCount !== n.heartCount) nextProps.heartCount = n.heartCount
         if (shape.props.likedByMe !== n.likedByMe) nextProps.likedByMe = n.likedByMe
         if (shape.props.isOwner !== n.isOwner) nextProps.isOwner = n.isOwner
@@ -107,6 +129,8 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
           nextProps.authorLinkedInUrl = n.authorLinkedInUrl
         }
         if (shape.props.color !== n.color) nextProps.color = n.color
+        if (shape.props.w !== noteWidth) nextProps.w = noteWidth
+        if (shape.props.h !== noteHeight) nextProps.h = noteHeight
 
         const posChanged =
           !isNoteDragging(n._id) && (shape.x !== n.x || shape.y !== n.y)
@@ -128,7 +152,7 @@ export function useSyncNotes(editor: Editor | null, identity: Identity) {
       }
     })
     isApplyingRemoteRef.current = false
-  }, [editor, notes])
+  }, [editor, notes, noteWidth, noteHeight])
 
   useEffect(() => {
     if (!editor) return

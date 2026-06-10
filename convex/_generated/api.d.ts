@@ -15,6 +15,7 @@ import type * as notes from "../notes.js";
 import type * as pages from "../pages.js";
 import type * as presence from "../presence.js";
 import type * as profiles from "../profiles.js";
+import type * as systemPages from "../systemPages.js";
 
 import type {
   ApiFromModules,
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   pages: typeof pages;
   presence: typeof presence;
   profiles: typeof profiles;
+  systemPages: typeof systemPages;
 }>;
 
 /**

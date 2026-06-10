@@ -1,25 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import type { MutationCtx } from './_generated/server'
-
-const MAIN_PAGE_NAME = 'Cursor Learnings'
-
-async function getOrCreateMainPage(ctx: MutationCtx) {
-  const lockedPages = await ctx.db
-    .query('pages')
-    .withIndex('by_locked', (q) => q.eq('isLocked', true))
-    .collect()
-
-  if (lockedPages.length > 0) return lockedPages[0]._id
-
-  return ctx.db.insert('pages', {
-    name: MAIN_PAGE_NAME,
-    authorSessionId: 'system',
-    authorName: 'System',
-    isLocked: true,
-    createdAt: Date.now(),
-  })
-}
+import { comparePagesForDisplay, getOrCreateMainPage } from './systemPages'
 
 export const bootstrap = mutation({
   args: {},
@@ -31,9 +12,10 @@ export const list = query({
   handler: async (ctx, { sessionId }) => {
     const pages = await ctx.db.query('pages').collect()
     return pages
-      .sort((a, b) => a.createdAt - b.createdAt)
+      .sort(comparePagesForDisplay)
       .map((page) => ({
         ...page,
+        pageKind: page.pageKind ?? 'tip',
         isOwner: page.authorSessionId === sessionId,
         canDelete: !page.isLocked && page.authorSessionId === sessionId,
       }))
@@ -55,6 +37,7 @@ export const create = mutation({
       authorSessionId: args.sessionId,
       authorName,
       isLocked: false,
+      pageKind: 'tip',
       createdAt: Date.now(),
     })
   },

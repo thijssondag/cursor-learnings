@@ -87,20 +87,31 @@ export function consumeNoteEntrance(noteId: string): NoteEntrance {
   return null
 }
 
+export type PageKind = 'tip' | 'buildPlan'
+
 export interface NoteForState {
   _id: string
   isOwner: boolean
   text: string
+  project?: string
+}
+
+function isNoteContentEmpty(note: NoteForState, pageKind: PageKind): boolean {
+  if (pageKind === 'buildPlan') {
+    return (note.project ?? '').trim() === ''
+  }
+  return note.text.trim() === ''
 }
 
 export function hasUnfinishedOwnedNote(
   notes: NoteForState[] | undefined,
   editingId: string | null,
+  pageKind: PageKind,
 ): boolean {
   if (!notes) return false
   return notes.some(
     (n) =>
-      n.isOwner && (n.text.trim() === '' || n._id === editingId),
+      n.isOwner && (isNoteContentEmpty(n, pageKind) || n._id === editingId),
   )
 }
 
@@ -113,29 +124,38 @@ export interface AddNoteAvailability {
   addNoteShortLabel: string
 }
 
-function addNoteLabels(isSingleNotePage: boolean) {
-  if (isSingleNotePage) {
+function addNoteLabels(pageKind: PageKind, isLocked: boolean) {
+  if (!isLocked) {
     return {
-      addNoteLabel: 'Add your tip',
+      addNoteLabel: 'Add note',
+      addNoteLimit: '',
+      addNoteShortLabel: 'Add note',
+      enabledTitle: 'Add a note to this board',
+    }
+  }
+  if (pageKind === 'buildPlan') {
+    return {
+      addNoteLabel: 'Add your project',
       addNoteLimit: ' · 1 per person',
-      addNoteShortLabel: 'Your tip',
-      enabledTitle: 'One tip per person on this board',
+      addNoteShortLabel: 'Your project',
+      enabledTitle: 'One project per person on this board',
     }
   }
   return {
-    addNoteLabel: 'Add note',
-    addNoteLimit: '',
-    addNoteShortLabel: 'Add note',
-    enabledTitle: 'Add a note to this board',
+    addNoteLabel: 'Add your tip',
+    addNoteLimit: ' · 1 per person',
+    addNoteShortLabel: 'Your tip',
+    enabledTitle: 'One tip per person on this board',
   }
 }
 
 export function getAddNoteAvailability(
   notes: NoteForState[] | undefined,
   editingId: string | null,
-  isSingleNotePage: boolean,
+  pageKind: PageKind,
+  isLocked: boolean,
 ): AddNoteAvailability {
-  const labels = addNoteLabels(isSingleNotePage)
+  const labels = addNoteLabels(pageKind, isLocked)
 
   if (!notes) {
     return {
@@ -145,7 +165,7 @@ export function getAddNoteAvailability(
     }
   }
 
-  if (hasUnfinishedOwnedNote(notes, editingId)) {
+  if (hasUnfinishedOwnedNote(notes, editingId, pageKind)) {
     return {
       canAddNote: false,
       hint: 'Finish or delete your note first',
@@ -158,13 +178,18 @@ export function getAddNoteAvailability(
     return { canAddNote: true, hint: labels.enabledTitle, ...labels }
   }
 
-  if (!isSingleNotePage) {
+  if (!isLocked) {
     return { canAddNote: true, hint: labels.enabledTitle, ...labels }
   }
 
+  const alreadySharedHint =
+    pageKind === 'buildPlan'
+      ? 'One project per person — you already shared yours'
+      : 'One tip per person — you already shared yours'
+
   return {
     canAddNote: false,
-    hint: 'One tip per person — you already shared yours',
+    hint: alreadySharedHint,
     ...labels,
   }
 }

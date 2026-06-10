@@ -2,6 +2,41 @@
 
 All notable changes to the Cursor Learnings Board are documented here.
 
+## [0.0.7] — 2026-06-10
+
+Per-page participation QR codes and deep linking (by Thijs / agent).
+
+### Added
+
+- **Per-page QR codes:** The in-app QR overlay encodes a page-specific URL for Cursor Learnings (`?page=learnings`) and Cursor Nijmegen Build Plans (`?page=build-plans`).
+- **Deep linking:** Opening or scanning a participation URL with `?page=` lands on the matching system page after join.
+- **Static QR assets:** `public/qr/cursor-learnings.png` and `public/qr/cursor-nijmegen-build-plans.png` for PowerPoint slides.
+- **QR generator script:** `npm run generate:qr` regenerates the PNG assets from the canonical participation URLs.
+
+### Changed
+
+- **URL sync:** Switching between system pages updates the browser URL so refresh and share links stay on the same board.
+
+## [0.0.6] — 2026-06-10
+
+Cursor Nijmegen Build Plans page (by Thijs / agent).
+
+### Changed
+
+- **Page menu order:** Build Plans now appears second in the page list, directly after Cursor Learnings.
+- **Build plan note size:** Notes on the Build Plans page are wider (280px) and taller (300px), with more room in the support question field.
+
+### Added
+
+- **Build Plans page:** Locked system page "Cursor Nijmegen Build Plans" auto-created alongside Cursor Learnings on bootstrap.
+- **Two-field notes:** Build-plan notes show "What are you building?" (required) and "What support are you looking for?" (optional) instead of a single tip textarea.
+- **Page kinds:** `pageKind` on pages (`tip` | `buildPlan`) drives note layout and add-note button labels.
+
+### Changed
+
+- **One note per person:** Locked pages enforce one note per person with page-specific copy (tip vs project).
+- **System pages:** Bootstrap ensures both Cursor Learnings and Build Plans exist by name among locked pages.
+
 ## [0.0.5] — 2026-06-10
 
 Version bump and production deploy (by Thijs / agent).

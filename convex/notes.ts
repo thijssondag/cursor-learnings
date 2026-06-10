@@ -37,6 +37,8 @@ export const list = query({
       isOwner: note.authorSessionId === sessionId,
       authorXHandle: note.authorXHandle ?? '',
       authorLinkedInUrl: note.authorLinkedInUrl ?? '',
+      project: note.project ?? '',
+      supportQuestion: note.supportQuestion ?? '',
     }))
   },
 })
@@ -47,6 +49,8 @@ export const create = mutation({
     sessionId: v.string(),
     authorName: v.string(),
     text: v.string(),
+    project: v.optional(v.string()),
+    supportQuestion: v.optional(v.string()),
     x: v.number(),
     y: v.number(),
     rotation: v.number(),
@@ -65,7 +69,7 @@ export const create = mutation({
         .withIndex('by_page', (q) => q.eq('pageId', args.pageId))
         .collect()
       if (pageNotes.some((note) => note.authorSessionId === args.sessionId)) {
-        throw new Error('One tip per person on each page')
+        throw new Error('One note per person on this page')
       }
     }
 
@@ -74,12 +78,16 @@ export const create = mutation({
     }
 
     const profileFields = await profileFieldsForAuthor(ctx, args.sessionId)
+    const pageKind = page.pageKind ?? 'tip'
+
     return ctx.db.insert('notes', {
       pageId: args.pageId,
       authorSessionId: args.sessionId,
       authorName,
       ...profileFields,
-      text: args.text,
+      text: pageKind === 'buildPlan' ? '' : args.text,
+      project: pageKind === 'buildPlan' ? args.project ?? '' : undefined,
+      supportQuestion: pageKind === 'buildPlan' ? args.supportQuestion ?? '' : undefined,
       x: args.x,
       y: args.y,
       rotation: args.rotation,
@@ -103,11 +111,19 @@ export const update = mutation({
   args: {
     noteId: v.id('notes'),
     sessionId: v.string(),
-    text: v.string(),
+    text: v.optional(v.string()),
+    project: v.optional(v.string()),
+    supportQuestion: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const note = await requireOwnedNote(ctx, args.noteId, args.sessionId)
-    await ctx.db.patch(note._id, { text: args.text })
+    const patch: Record<string, string> = {}
+    if (args.text !== undefined) patch.text = args.text
+    if (args.project !== undefined) patch.project = args.project
+    if (args.supportQuestion !== undefined) patch.supportQuestion = args.supportQuestion
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(note._id, patch)
+    }
   },
 })
 

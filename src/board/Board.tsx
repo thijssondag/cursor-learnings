@@ -12,11 +12,18 @@ import type { Id } from '../../convex/_generated/dataModel'
 import { IdentityProvider } from '../context/IdentityContext'
 import { PresenceProvider } from '../context/PresenceContext'
 import { DeleteProvider } from '../context/DeleteContext'
+import { ParticipationQrOverlay } from '../components/ParticipationQrOverlay'
 import { PageProvider, usePageContext } from '../context/PageContext'
 import { BoardActionsProvider } from '../context/BoardActionsContext'
 import { useTheme } from '../context/ThemeContext'
 import type { Identity } from '../lib/identity'
-import { NOTE_HEIGHT, NOTE_WIDTH, randomTilt } from '../lib/constants'
+import {
+  BUILD_PLAN_NOTE_HEIGHT,
+  BUILD_PLAN_NOTE_WIDTH,
+  NOTE_HEIGHT,
+  NOTE_WIDTH,
+  randomTilt,
+} from '../lib/constants'
 import { DEFAULT_NOTE_COLOR } from '../lib/noteColors'
 import {
   getAddNoteAvailability,
@@ -240,6 +247,7 @@ export function Board({
               onClose={() => setShowClearCanvas(false)}
               onClearingChange={setIsClearingCanvas}
             />
+            <ParticipationQrOverlay />
           </DeleteProvider>
         </PageProvider>
       </PresenceProvider>
@@ -276,7 +284,8 @@ function BoardWithActions({
   const createNote = useMutation(api.notes.create)
 
   const editingId = useEditingNoteId()
-  const isSingleNotePage = currentPage?.isLocked ?? true
+  const pageKind = currentPage?.pageKind ?? 'tip'
+  const isLocked = currentPage?.isLocked ?? true
   const {
     canAddNote,
     hint: addNoteHint,
@@ -284,7 +293,7 @@ function BoardWithActions({
     addNoteLabel,
     addNoteLimit,
     addNoteShortLabel,
-  } = getAddNoteAvailability(notes, editingId, isSingleNotePage)
+  } = getAddNoteAvailability(notes, editingId, pageKind, isLocked)
 
   const boardUiOverrides = useMemo(
     () => createBoardUiOverrides(`${addNoteLabel}${addNoteLimit}`),
@@ -294,13 +303,19 @@ function BoardWithActions({
   const handleAddNote = async () => {
     if (!editor || !canAddNote || !currentPageId) return
     const center = editor.getViewportPageBounds().center
+    const noteWidth =
+      pageKind === 'buildPlan' ? BUILD_PLAN_NOTE_WIDTH : NOTE_WIDTH
+    const noteHeight =
+      pageKind === 'buildPlan' ? BUILD_PLAN_NOTE_HEIGHT : NOTE_HEIGHT
     const noteId = await createNote({
       pageId: currentPageId,
       sessionId: identity.sessionId,
       authorName: identity.name,
       text: '',
-      x: center.x - NOTE_WIDTH / 2,
-      y: center.y - NOTE_HEIGHT / 2,
+      project: pageKind === 'buildPlan' ? '' : undefined,
+      supportQuestion: pageKind === 'buildPlan' ? '' : undefined,
+      x: center.x - noteWidth / 2,
+      y: center.y - noteHeight / 2,
       rotation: randomTilt(),
       color: DEFAULT_NOTE_COLOR,
     })

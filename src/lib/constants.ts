@@ -1,7 +1,11 @@
-export const APP_VERSION = '0.0.5'
+export const APP_VERSION = '0.0.7'
+
+export const PARTICIPATION_BASE_URL = 'https://cursor-learnings-beta.vercel.app'
 
 export const NOTE_WIDTH = 220
 export const NOTE_HEIGHT = 168
+export const BUILD_PLAN_NOTE_WIDTH = 280
+export const BUILD_PLAN_NOTE_HEIGHT = 300
 
 // Random gentle tilt (radians) for the sticky-note feel in the mockup.
 export function randomTilt(): number {
