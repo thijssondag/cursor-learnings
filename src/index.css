@@ -503,7 +503,19 @@ button {
   color: var(--color-text-muted);
 }
 
+.top-bar__fit-btn {
+  display: none;
+}
+
 @media (max-width: 639px) {
+  .top-bar__fit-btn {
+    display: inline-flex;
+  }
+
+  .tlui-main-toolbar {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
   .top-bar {
     padding: 8px 12px;
     padding-top: max(8px, env(safe-area-inset-top));

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Tldraw,
   DefaultSizeStyle,
@@ -35,6 +35,11 @@ import {
 } from './useSyncCanvasShapes'
 import { useCursorBroadcast } from './usePresence'
 import { BoardToolbar } from './BoardToolbar'
+import {
+  configureMobileEditor,
+  fitPageToViewport,
+  useMobileCameraFit,
+} from './useMobileCameraFit'
 import { createBoardUiOverrides } from './boardUiOverrides'
 import { TopBar } from '../components/TopBar'
 import { RemoteCursors } from '../components/RemoteCursors'
@@ -261,6 +266,13 @@ function BoardWithActions({
   useSyncCanvasShapes(editor)
   useCursorBroadcast(editor, identity)
 
+  const contentVersion = notes?.length ?? 0
+  useMobileCameraFit(editor, currentPageId, contentVersion)
+
+  const handleFitAll = useCallback(() => {
+    if (editor) fitPageToViewport(editor)
+  }, [editor])
+
   const createNote = useMutation(api.notes.create)
 
   const editingId = useEditingNoteId()
@@ -298,6 +310,7 @@ function BoardWithActions({
   return (
     <BoardActionsProvider
       onAddNote={() => void handleAddNote()}
+      onFitAll={handleFitAll}
       canAddNote={canAddNote}
       addNoteHint={addNoteHint}
       addNoteTitle={addNoteTitle}
@@ -313,6 +326,7 @@ function BoardWithActions({
         colorScheme={resolvedTheme}
         onMount={(e) => {
           configureEditor(e)
+          configureMobileEditor(e)
           setEditor(e)
         }}
       >

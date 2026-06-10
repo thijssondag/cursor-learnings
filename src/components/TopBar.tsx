@@ -1,4 +1,7 @@
+import { IconArrowsMaximize } from '@tabler/icons-react'
+import { useBoardActions } from '../context/BoardActionsContext'
 import { usePresenceContext } from '../context/PresenceContext'
+import { iconProps } from '../lib/iconProps'
 import { PageMenu } from './PageMenu'
 import { ThemeToggle } from './ThemeToggle'
 import { MotionButton } from './MotionButton'
@@ -25,6 +28,7 @@ export function TopBar({
   onEditProfile: () => void
 }) {
   const { onlineCount } = usePresenceContext()
+  const { onFitAll } = useBoardActions()
 
   return (
     <div className="top-bar">
@@ -52,6 +56,19 @@ export function TopBar({
         </div>
 
         <div className="top-bar__actions">
+          <Button
+            type="button"
+            color="secondary"
+            size="sm"
+            onClick={onFitAll}
+            aria-label="Fit all notes in view"
+            className="top-bar__action-btn top-bar__fit-btn"
+          >
+            <IconArrowsMaximize {...iconProps(16)} aria-hidden />
+            <span className="top-bar__btn-label top-bar__btn-label--short" aria-hidden>
+              Fit
+            </span>
+          </Button>
           <ThemeToggle />
           <MotionButton
             type="button"

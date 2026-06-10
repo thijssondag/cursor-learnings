@@ -2,6 +2,17 @@
 
 All notable changes to the Cursor Learnings Board are documented here.
 
+## [0.0.8] — 2026-06-09
+
+Mobile board UX improvements (by Thijs / agent).
+
+### Changed
+
+- **Mobile camera:** Auto zoom-to-fit on narrow screens after load, page switch, and orientation change so multiple notes stay visible.
+- **Fit button:** Mobile-only top-bar control to re-fit all notes after panning or zooming.
+- **Mobile toolbar:** Shows essential tools only (select, hand, draw, eraser, add note); hand tool is the default on mobile.
+- **Safe areas:** Added `viewport-fit=cover` and bottom safe-area padding for the tldraw toolbar.
+
 ## [0.0.7] — 2026-06-09
 
 Fix newly created note not draggable (by Thijs / agent).
@@ -12,6 +23,7 @@ Fix newly created note not draggable (by Thijs / agent).
 
 ### Fixed
 
+- **Note drag by ownership:** Other people's notes can be dragged from the header and text body; your own notes still drag only from the top bar so the textarea stays editable.
 - **Note drag on create:** Removed auto-focus on the textarea after adding a note. The focused input was consuming the first pointer interaction on the drag header, so users had to click the canvas once before a note could move.
 - **Note move sync:** Keep drag state until the Convex `moveNote` mutation finishes, preventing position snap-back on pointer-up.
 - **Clear drawings:** Strokes no longer reappear after clearing when clicking the canvas. Outbound sync is paused during clear, stale draw refs are dropped, and Convex is cleared before local shapes are removed.

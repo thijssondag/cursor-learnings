@@ -29,14 +29,37 @@ import {
   XBoxToolbarItem,
 } from 'tldraw'
 import { useBoardActions } from '../context/BoardActionsContext'
+import { useIsMobile } from '../lib/useMediaQuery'
 import { useToolbarAppearAnimation } from './useToolbarAppearAnimation'
 
-export function BoardToolbar() {
+function MobileEssentialTools() {
   const { onAddNote, canAddNote, addNoteLabel, addNoteLimit } = useBoardActions()
-  useToolbarAppearAnimation()
 
   return (
-    <DefaultToolbar>
+    <>
+      <SelectToolbarItem />
+      <HandToolbarItem />
+      <DrawToolbarItem />
+      <EraserToolbarItem />
+      <TldrawUiMenuItem
+        id="add-tip-note"
+        label={`${addNoteLabel}${addNoteLimit}`}
+        icon="tool-note"
+        kbd="n"
+        onSelect={() => {
+          if (canAddNote) onAddNote()
+        }}
+        disabled={!canAddNote}
+      />
+    </>
+  )
+}
+
+function DesktopFullTools() {
+  const { onAddNote, canAddNote, addNoteLabel, addNoteLimit } = useBoardActions()
+
+  return (
+    <>
       <SelectToolbarItem />
       <HandToolbarItem />
       <DrawToolbarItem />
@@ -73,6 +96,17 @@ export function BoardToolbar() {
       <HighlightToolbarItem />
       <LaserToolbarItem />
       <FrameToolbarItem />
+    </>
+  )
+}
+
+export function BoardToolbar() {
+  const isMobile = useIsMobile()
+  useToolbarAppearAnimation()
+
+  return (
+    <DefaultToolbar>
+      {isMobile ? <MobileEssentialTools /> : <DesktopFullTools />}
     </DefaultToolbar>
   )
 }
