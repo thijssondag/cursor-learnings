@@ -532,14 +532,8 @@ button {
   display: none;
 }
 
-@media (max-width: 767px) {
-  .top-bar {
-    padding: 8px 12px;
-    padding-top: max(8px, env(safe-area-inset-top));
-    padding-left: max(12px, env(safe-area-inset-left));
-    padding-right: max(12px, env(safe-area-inset-right));
-  }
-
+/* Collapse toolbar actions into the page menu below desktop widths */
+@media (max-width: 1199px) {
   .top-bar__inner {
     flex-direction: row;
     align-items: center;
@@ -584,7 +578,7 @@ button {
 
   .page-menu__title {
     font-size: 14px;
-    max-width: min(180px, 42vw);
+    max-width: min(220px, 38vw);
   }
 
   .page-menu__mobile-actions {
@@ -596,6 +590,19 @@ button {
     height: 1px;
     background: var(--color-border);
     margin: 6px 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .top-bar {
+    padding: 8px 12px;
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  .page-menu__title {
+    max-width: min(180px, 42vw);
   }
 
   .tlui-main-toolbar {

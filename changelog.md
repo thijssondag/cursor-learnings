@@ -2,6 +2,14 @@
 
 All notable changes to the Cursor Learnings Board are documented here.
 
+## [0.0.8] — 2026-06-10
+
+Top bar responsive breakpoint tweak (by Thijs / agent).
+
+### Changed
+
+- **Toolbar collapse:** System, QR, Clear Drawings, Fit, theme, and Edit profile now move into the page menu below 1200px width so the header stays uncluttered on laptops and narrow desktop windows.
+
 ## [0.0.7] — 2026-06-10
 
 Per-page participation QR codes and deep linking (by Thijs / agent).
