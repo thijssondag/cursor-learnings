@@ -18,7 +18,7 @@ import { NoteOwnerMenu } from '../components/NoteOwnerMenu'
 import { SocialIcons } from '../components/SocialIcons'
 import { useRequestDelete } from '../context/DeleteContext'
 import { useIdentity } from '../context/IdentityContext'
-import { usePageContext } from '../context/PageContext'
+import { useOptionalPageContext } from '../context/PageContext'
 import {
   consumeNoteEntrance,
   isNoteDragging,
@@ -164,8 +164,8 @@ function NoteCard({ shape }: { shape: NoteShape }) {
     noteId,
   } = shape.props
   const identity = useIdentity()
-  const { currentPage } = usePageContext()
-  const pageKind = currentPage?.pageKind ?? 'tip'
+  const pageContext = useOptionalPageContext()
+  const pageKind = pageContext?.currentPage?.pageKind ?? 'tip'
   const requestDelete = useRequestDelete()
   const toggleHeart = useMutation(api.hearts.toggle)
   const updateNote = useMutation(api.notes.update)

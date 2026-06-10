@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { QRCodeSVG } from 'qrcode.react'
-import { usePageContext } from '../context/PageContext'
+import { useOptionalPageContext } from '../context/PageContext'
 import { useQrCode } from '../context/QrCodeContext'
 import {
   buildParticipationUrl,
@@ -19,11 +19,14 @@ const QR_SIZE = 240
 
 export function ParticipationQrOverlay() {
   const { isQrVisible } = useQrCode()
-  const { currentPage } = usePageContext()
+  const pageContext = useOptionalPageContext()
   const reduceMotion = useReducedMotion()
   const enter = motionDuration(DURATION_NORMAL, reduceMotion)
   const exit = motionDuration(DURATION_FAST, reduceMotion)
 
+  if (!pageContext) return null
+
+  const { currentPage } = pageContext
   const slug = currentPage ? getPageSlug(currentPage) : null
   const participationUrl = buildParticipationUrl(slug)
   const displayUrl = formatParticipationDisplayUrl(slug)

@@ -125,8 +125,12 @@ export function PageProvider({
   )
 }
 
+export function useOptionalPageContext(): PageContextValue | null {
+  return useContext(PageContext)
+}
+
 export function usePageContext(): PageContextValue {
-  const ctx = useContext(PageContext)
+  const ctx = useOptionalPageContext()
   if (!ctx) throw new Error('usePageContext must be used within PageProvider')
   return ctx
 }

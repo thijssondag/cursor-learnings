@@ -38,7 +38,6 @@ export function configureMobileEditor(editor: Editor) {
 export function useMobileCameraFit(
   editor: Editor | null,
   pageId: string | undefined,
-  contentVersion: number,
 ) {
   const hasAutoFitRef = useRef(false)
   const wasMobileRef = useRef(isMobileViewport())
@@ -98,5 +97,5 @@ export function useMobileCameraFit(
       window.removeEventListener('resize', onResize)
       window.removeEventListener('orientationchange', onOrientationChange)
     }
-  }, [editor, pageId, contentVersion])
+  }, [editor, pageId])
 }

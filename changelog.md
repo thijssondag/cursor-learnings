@@ -2,6 +2,36 @@
 
 All notable changes to the Cursor Learnings Board are documented here.
 
+## [0.0.11] — 2026-06-10
+
+Auto-fit follows moves and periodic in-view check (by Thijs / agent).
+
+### Changed
+
+- **Auto-fit on moves:** Follow mode now refits when notes are moved or deleted, not only when new ones are added. Refit is skipped during an active drag to avoid jitter.
+- **In-view poll:** With auto-fit on, the camera checks every 5 seconds whether all notes are still in view and refits if any have drifted outside the viewport.
+
+## [0.0.10] — 2026-06-10
+
+Auto-fit toggle for Fit button (by Thijs / agent).
+
+### Added
+
+- **Auto-fit toggle:** The Fit button now toggles a follow mode — when on, the camera refits whenever any new note appears on the page; when off, the view stays put.
+
+### Changed
+
+- **Mobile auto-fit:** Note-count changes no longer implicitly retrigger mobile camera fit; only the auto-fit toggle controls note-driven refitting.
+
+## [0.0.9] — 2026-06-10
+
+Top bar Fit button and dev stability (by Thijs / agent).
+
+### Changed
+
+- **Fit button:** "Fit all notes" now stays visible next to the add-note button instead of moving into the page menu.
+- **Dev HMR:** QR overlay and note cards tolerate a missing page context during hot reload instead of crashing the app.
+
 ## [0.0.8] — 2026-06-10
 
 Top bar responsive breakpoint tweak (by Thijs / agent).

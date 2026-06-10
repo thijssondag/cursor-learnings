@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  IconArrowsMaximize,
   IconDeviceDesktop,
   IconDots,
   IconEraser,
@@ -13,7 +12,6 @@ import {
   IconUser,
 } from '@tabler/icons-react'
 import type { Id } from '../../convex/_generated/dataModel'
-import { useBoardActions } from '../context/BoardActionsContext'
 import { usePageContext, type BoardPage } from '../context/PageContext'
 import { useQrCode } from '../context/QrCodeContext'
 import { useTheme, type ThemePreference } from '../context/ThemeContext'
@@ -37,7 +35,6 @@ export function PageMenu({
 }) {
   const { pages, currentPage, currentPageId, setCurrentPageId, createPage, renamePage, deletePage } =
     usePageContext()
-  const { onFitAll } = useBoardActions()
   const { preference, cyclePreference } = useTheme()
   const { isQrVisible, toggleQr } = useQrCode()
   const [open, setOpen] = useState(false)
@@ -335,17 +332,6 @@ export function PageMenu({
             >
               <IconUser {...iconProps(16)} aria-hidden />
               Edit profile
-            </MotionButton>
-            <MotionButton
-              type="button"
-              onClick={() => {
-                onFitAll()
-                closeMenu()
-              }}
-              style={menuActionStyle}
-            >
-              <IconArrowsMaximize {...iconProps(16)} aria-hidden />
-              Fit all notes
             </MotionButton>
             <MotionButton
               type="button"

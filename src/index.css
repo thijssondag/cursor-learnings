@@ -452,10 +452,18 @@ button {
   order: 5;
 }
 
-.top-bar__add-btn {
+.top-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   order: 10;
   margin-left: auto;
   pointer-events: auto;
+  flex-shrink: 0;
+}
+
+.top-bar__add-btn {
+  margin-left: 0;
 }
 
 .top-bar__btn-icon-only {
@@ -518,7 +526,7 @@ button {
 }
 
 .top-bar__fit-btn {
-  display: none;
+  padding: 8px 12px;
 }
 
 .page-menu__pages-divider {
@@ -562,9 +570,12 @@ button {
     min-width: 0;
   }
 
-  .top-bar__add-btn {
+  .top-bar__actions {
     flex: 0 0 auto;
     margin-left: auto;
+  }
+
+  .top-bar__add-btn {
     padding: 8px 12px;
   }
 
@@ -692,7 +703,8 @@ button {
   font-size: 13px;
 }
 
-.qr-toggle--active {
+.qr-toggle--active,
+.fit-toggle--active {
   border-color: var(--color-accent);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 35%, transparent);
 }

@@ -3,7 +3,8 @@ import { createContext, useContext } from 'react'
 
 interface BoardActionsContextValue {
   onAddNote: () => void
-  onFitAll: () => void
+  isAutoFitEnabled: boolean
+  onToggleAutoFit: () => void
   canAddNote: boolean
   addNoteHint: string
   addNoteTitle: string
@@ -16,7 +17,8 @@ const BoardActionsContext = createContext<BoardActionsContextValue | null>(null)
 
 export function BoardActionsProvider({
   onAddNote,
-  onFitAll,
+  isAutoFitEnabled,
+  onToggleAutoFit,
   canAddNote,
   addNoteHint,
   addNoteTitle,
@@ -29,7 +31,8 @@ export function BoardActionsProvider({
     <BoardActionsContext.Provider
       value={{
         onAddNote,
-        onFitAll,
+        isAutoFitEnabled,
+        onToggleAutoFit,
         canAddNote,
         addNoteHint,
         addNoteTitle,

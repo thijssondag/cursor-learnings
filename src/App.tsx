@@ -3,6 +3,7 @@ import { useMutation } from 'convex/react'
 import { api } from '../convex/_generated/api'
 import { BoardLoading } from './components/BoardLoading'
 import { NameModal } from './components/NameModal'
+import { AutoFitProvider } from './context/AutoFitContext'
 import { QrCodeProvider } from './context/QrCodeContext'
 import { createIdentity, getStoredIdentity, type Identity } from './lib/identity'
 
@@ -48,7 +49,9 @@ function AppContent() {
 function App() {
   return (
     <QrCodeProvider>
-      <AppContent />
+      <AutoFitProvider>
+        <AppContent />
+      </AutoFitProvider>
     </QrCodeProvider>
   )
 }

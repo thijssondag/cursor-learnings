@@ -14,6 +14,7 @@ import { PresenceProvider } from '../context/PresenceContext'
 import { DeleteProvider } from '../context/DeleteContext'
 import { ParticipationQrOverlay } from '../components/ParticipationQrOverlay'
 import { PageProvider, usePageContext } from '../context/PageContext'
+import { useAutoFitContext } from '../context/AutoFitContext'
 import { BoardActionsProvider } from '../context/BoardActionsContext'
 import { useTheme } from '../context/ThemeContext'
 import type { Identity } from '../lib/identity'
@@ -42,6 +43,7 @@ import {
 } from './useSyncCanvasShapes'
 import { useCursorBroadcast } from './usePresence'
 import { BoardToolbar } from './BoardToolbar'
+import { useAutoFitFollow } from './useAutoFitFollow'
 import {
   configureMobileEditor,
   fitPageToViewport,
@@ -270,16 +272,21 @@ function BoardWithActions({
 }) {
   const { currentPageId, currentPage } = usePageContext()
   const { resolvedTheme } = useTheme()
+  const { isAutoFitEnabled, toggleAutoFit } = useAutoFitContext()
   const notes = useSyncNotes(editor, identity)
   useSyncCanvasShapes(editor)
   useCursorBroadcast(editor, identity)
 
-  const contentVersion = notes?.length ?? 0
-  useMobileCameraFit(editor, currentPageId ?? undefined, contentVersion)
+  useMobileCameraFit(editor, currentPageId ?? undefined)
+  useAutoFitFollow(editor, notes, currentPageId, isAutoFitEnabled)
 
-  const handleFitAll = useCallback(() => {
-    if (editor) fitPageToViewport(editor)
-  }, [editor])
+  const handleToggleAutoFit = useCallback(() => {
+    const enabling = !isAutoFitEnabled
+    toggleAutoFit()
+    if (enabling && editor) {
+      fitPageToViewport(editor, true)
+    }
+  }, [editor, isAutoFitEnabled, toggleAutoFit])
 
   const createNote = useMutation(api.notes.create)
 
@@ -325,7 +332,8 @@ function BoardWithActions({
   return (
     <BoardActionsProvider
       onAddNote={() => void handleAddNote()}
-      onFitAll={handleFitAll}
+      isAutoFitEnabled={isAutoFitEnabled}
+      onToggleAutoFit={handleToggleAutoFit}
       canAddNote={canAddNote}
       addNoteHint={addNoteHint}
       addNoteTitle={addNoteTitle}
