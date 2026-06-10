@@ -2,6 +2,14 @@
 
 All notable changes to the Cursor Learnings Board are documented here.
 
+## [0.0.5] — 2026-06-10
+
+Version bump and production deploy (by Thijs / agent).
+
+### Changed
+
+- **Page menu:** Bumped displayed app version to v0.0.5.
+
 ## [0.0.8] — 2026-06-09
 
 Mobile board UX improvements (by Thijs / agent).
