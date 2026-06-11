@@ -10,6 +10,7 @@
 
 import type * as drawings from "../drawings.js";
 import type * as hearts from "../hearts.js";
+import type * as limits from "../limits.js";
 import type * as maintenance from "../maintenance.js";
 import type * as notes from "../notes.js";
 import type * as pages from "../pages.js";
@@ -26,6 +27,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   drawings: typeof drawings;
   hearts: typeof hearts;
+  limits: typeof limits;
   maintenance: typeof maintenance;
   notes: typeof notes;
   pages: typeof pages;

@@ -2,6 +2,12 @@
 
 All notable changes to the Cursor Learnings Board are documented here.
 
+## [Unreleased]
+
+### Changed
+
+- **Five tips per person:** Locked tip pages now allow up to five sticky notes per person (was one). Build-plan pages remain one project per person. Enforced in both Convex `notes.create` and frontend add-note availability.
+
 ## [0.0.11] — 2026-06-10
 
 Auto-fit follows moves and periodic in-view check (by Thijs / agent).

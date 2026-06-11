@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import type { MutationCtx, QueryCtx } from './_generated/server'
+import { maxNotesErrorMessage, maxNotesPerPerson } from './limits'
 
 async function profileFieldsForAuthor(ctx: QueryCtx | MutationCtx, sessionId: string) {
   const profile = await ctx.db
@@ -63,13 +64,18 @@ export const create = mutation({
     const page = await ctx.db.get(args.pageId)
     if (!page) throw new Error('Page not found')
 
+    const pageKind = page.pageKind ?? 'tip'
+
     if (page.isLocked) {
       const pageNotes = await ctx.db
         .query('notes')
         .withIndex('by_page', (q) => q.eq('pageId', args.pageId))
         .collect()
-      if (pageNotes.some((note) => note.authorSessionId === args.sessionId)) {
-        throw new Error('One note per person on this page')
+      const ownedCount = pageNotes.filter(
+        (note) => note.authorSessionId === args.sessionId,
+      ).length
+      if (ownedCount >= maxNotesPerPerson(pageKind)) {
+        throw new Error(maxNotesErrorMessage(pageKind))
       }
     }
 
@@ -78,7 +84,6 @@ export const create = mutation({
     }
 
     const profileFields = await profileFieldsForAuthor(ctx, args.sessionId)
-    const pageKind = page.pageKind ?? 'tip'
 
     return ctx.db.insert('notes', {
       pageId: args.pageId,

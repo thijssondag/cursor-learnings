@@ -15,7 +15,7 @@ const FEATURES: {
 }[] = [
   {
     id: 'tip',
-    text: 'Share your #1 Cursor tip on the board. Everyone gets a single sticky note.',
+    text: 'Share your best Cursor tips on the board. Everyone gets up to five sticky notes.',
     Icon: IconNote,
   },
   {

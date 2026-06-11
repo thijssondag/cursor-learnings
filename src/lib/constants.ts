@@ -1,5 +1,8 @@
 export const APP_VERSION = '0.0.11'
 
+export const MAX_TIPS_PER_PERSON = 5
+export const MAX_BUILD_PLANS_PER_PERSON = 1
+
 export const PARTICIPATION_BASE_URL = 'https://cursor-learnings-beta.vercel.app'
 
 export const NOTE_WIDTH = 260

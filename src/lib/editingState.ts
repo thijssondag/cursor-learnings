@@ -1,6 +1,7 @@
 // Tracks local editing/drag state so the Convex reconciliation loop doesn't fight the user.
 
 import { useEffect, useState } from 'react'
+import { MAX_BUILD_PLANS_PER_PERSON, MAX_TIPS_PER_PERSON } from './constants'
 
 let editingNoteId: string | null = null
 const draggingNoteIds = new Set<string>()
@@ -143,9 +144,9 @@ function addNoteLabels(pageKind: PageKind, isLocked: boolean) {
   }
   return {
     addNoteLabel: 'Add your tip',
-    addNoteLimit: ' · 1 per person',
+    addNoteLimit: ` · ${MAX_TIPS_PER_PERSON} per person`,
     addNoteShortLabel: 'Your tip',
-    enabledTitle: 'One tip per person on this board',
+    enabledTitle: `Up to ${MAX_TIPS_PER_PERSON} tips per person on this board`,
   }
 }
 
@@ -174,18 +175,17 @@ export function getAddNoteAvailability(
   }
 
   const ownedNotes = notes.filter((n) => n.isOwner)
-  if (ownedNotes.length === 0) {
-    return { canAddNote: true, hint: labels.enabledTitle, ...labels }
-  }
+  const maxNotes =
+    pageKind === 'buildPlan' ? MAX_BUILD_PLANS_PER_PERSON : MAX_TIPS_PER_PERSON
 
-  if (!isLocked) {
+  if (!isLocked || ownedNotes.length < maxNotes) {
     return { canAddNote: true, hint: labels.enabledTitle, ...labels }
   }
 
   const alreadySharedHint =
     pageKind === 'buildPlan'
       ? 'One project per person — you already shared yours'
-      : 'One tip per person — you already shared yours'
+      : `Up to ${MAX_TIPS_PER_PERSON} tips per person — you've shared all yours`
 
   return {
     canAddNote: false,
