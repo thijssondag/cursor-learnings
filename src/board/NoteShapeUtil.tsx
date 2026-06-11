@@ -34,6 +34,7 @@ import {
 } from '../lib/motion'
 import { throttle } from '../lib/throttle'
 import { iconProps } from '../lib/iconProps'
+import { NOTE_HEIGHT, NOTE_WIDTH } from '../lib/constants'
 import {
   DEFAULT_NOTE_COLOR,
   isNoteColorOrLegacy,
@@ -85,8 +86,8 @@ export class NoteShapeUtil extends ShapeUtil<NoteShape> {
 
   getDefaultProps(): NoteShape['props'] {
     return {
-      w: 220,
-      h: 168,
+      w: NOTE_WIDTH,
+      h: NOTE_HEIGHT,
       noteId: '',
       text: '',
       project: '',
