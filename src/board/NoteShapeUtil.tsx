@@ -35,6 +35,7 @@ import {
 import { throttle } from '../lib/throttle'
 import { iconProps } from '../lib/iconProps'
 import { NOTE_HEIGHT, NOTE_WIDTH } from '../lib/constants'
+import { linkifyText } from '../lib/linkifyText'
 import {
   DEFAULT_NOTE_COLOR,
   isNoteColorOrLegacy,
@@ -148,6 +149,47 @@ const textareaStyle: React.CSSProperties = {
   pointerEvents: 'auto',
 }
 
+const cardTextStyle: React.CSSProperties = {
+  color: 'var(--color-text)',
+  fontSize: 14,
+  lineHeight: 1.4,
+  whiteSpace: 'pre-wrap',
+  overflow: 'hidden',
+  pointerEvents: 'auto',
+}
+
+function stopPointerEvent(e: React.PointerEvent | React.MouseEvent) {
+  e.stopPropagation()
+}
+
+function CardLinkifiedText({
+  text,
+  style,
+  editable,
+  onEditRequest,
+}: {
+  text: string
+  style?: React.CSSProperties
+  editable?: boolean
+  onEditRequest?: () => void
+}) {
+  const handleClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('a')) return
+    onEditRequest?.()
+  }
+
+  return (
+    <div
+      style={{ ...cardTextStyle, ...style }}
+      onPointerDown={stopPointerEvent}
+      onClick={editable ? handleClick : stopPointerEvent}
+      onDoubleClick={editable ? handleClick : undefined}
+    >
+      {linkifyText(text)}
+    </div>
+  )
+}
+
 function NoteCard({ shape }: { shape: NoteShape }) {
   const {
     w,
@@ -176,10 +218,12 @@ function NoteCard({ shape }: { shape: NoteShape }) {
   const [draftProject, setDraftProject] = useState(project)
   const [draftSupport, setDraftSupport] = useState(supportQuestion)
   const [heartAnimating, setHeartAnimating] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [entrance] = useState<NoteEntrance>(() => consumeNoteEntrance(noteId))
   const reduceMotion = useReducedMotion()
   const isFocused = useRef(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const supportTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   const cardColor = isNoteColorOrLegacy(color)
     ? color
@@ -250,11 +294,6 @@ function NoteCard({ shape }: { shape: NoteShape }) {
 
   const stop = (e: React.PointerEvent | React.MouseEvent) => e.stopPropagation()
 
-  const blockForeignInteraction = (e: React.PointerEvent | React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-  }
-
   const handleHeartClick = (e: React.MouseEvent) => {
     stop(e)
     setHeartAnimating(true)
@@ -276,11 +315,21 @@ function NoteCard({ shape }: { shape: NoteShape }) {
 
   const handleFocus = () => {
     isFocused.current = true
+    setIsEditing(true)
     setEditingNoteId(noteId)
+  }
+
+  const beginEditing = (field: 'tip' | 'project' | 'support' = 'tip') => {
+    setIsEditing(true)
+    window.requestAnimationFrame(() => {
+      if (field === 'support') supportTextareaRef.current?.focus()
+      else textareaRef.current?.focus()
+    })
   }
 
   const handleBlurTip = () => {
     isFocused.current = false
+    setIsEditing(false)
     setEditingNoteId(null)
     void updateNote({
       noteId: noteId as Id<'notes'>,
@@ -291,6 +340,7 @@ function NoteCard({ shape }: { shape: NoteShape }) {
 
   const handleBlurBuildPlan = () => {
     isFocused.current = false
+    setIsEditing(false)
     setEditingNoteId(null)
     void updateNote({
       noteId: noteId as Id<'notes'>,
@@ -301,7 +351,7 @@ function NoteCard({ shape }: { shape: NoteShape }) {
   }
 
   const renderTipContent = () => {
-    if (isOwner) {
+    if (isOwner && isEditing) {
       return (
         <textarea
           ref={textareaRef}
@@ -318,38 +368,19 @@ function NoteCard({ shape }: { shape: NoteShape }) {
         />
       )
     }
+
     return (
-      <>
-        <div
-          style={{
-            flex: 1,
-            color: 'var(--color-text)',
-            fontSize: 14,
-            lineHeight: 1.4,
-            whiteSpace: 'pre-wrap',
-            overflow: 'hidden',
-            userSelect: 'none',
-          }}
-        >
-          {text}
-        </div>
-        <div
-          aria-hidden
-          onPointerDown={blockForeignInteraction}
-          onDoubleClick={blockForeignInteraction}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            cursor: 'default',
-            pointerEvents: 'auto',
-          }}
-        />
-      </>
+      <CardLinkifiedText
+        text={isOwner ? draftText : text}
+        style={{ flex: 1, userSelect: isOwner ? 'text' : 'none' }}
+        editable={isOwner}
+        onEditRequest={isOwner ? () => beginEditing('tip') : undefined}
+      />
     )
   }
 
   const renderBuildPlanContent = () => {
-    if (isOwner) {
+    if (isOwner && isEditing) {
       return (
         <>
           <div
@@ -363,6 +394,7 @@ function NoteCard({ shape }: { shape: NoteShape }) {
           >
             <div style={fieldLabelStyle}>What are you building?</div>
             <textarea
+              ref={textareaRef}
               value={draftProject}
               onChange={(e) => {
                 setDraftProject(e.target.value)
@@ -393,6 +425,7 @@ function NoteCard({ shape }: { shape: NoteShape }) {
           >
             <div style={fieldLabelStyle}>What support are you looking for?</div>
             <textarea
+              ref={supportTextareaRef}
               value={draftSupport}
               onChange={(e) => {
                 setDraftSupport(e.target.value)
@@ -413,20 +446,14 @@ function NoteCard({ shape }: { shape: NoteShape }) {
       <>
         <div style={{ flex: '0 1 auto', minHeight: 0, maxHeight: '38%' }}>
           <div style={fieldLabelStyle}>What are you building?</div>
-          <div
-            style={{
-              color: 'var(--color-text)',
-              fontSize: 14,
-              lineHeight: 1.4,
-              whiteSpace: 'pre-wrap',
-              overflow: 'auto',
-              userSelect: 'none',
-            }}
-          >
-            {project}
-          </div>
+          <CardLinkifiedText
+            text={isOwner ? draftProject : project}
+            style={{ overflow: 'auto', userSelect: isOwner ? 'text' : 'none' }}
+            editable={isOwner}
+            onEditRequest={isOwner ? () => beginEditing('project') : undefined}
+          />
         </div>
-        {supportQuestion.trim() && (
+        {(isOwner ? draftSupport : supportQuestion).trim() && (
           <>
             <div
               style={{
@@ -438,33 +465,15 @@ function NoteCard({ shape }: { shape: NoteShape }) {
             />
             <div style={{ flex: '1 1 62%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <div style={fieldLabelStyle}>What support are you looking for?</div>
-              <div
-                style={{
-                  flex: 1,
-                  color: 'var(--color-text)',
-                  fontSize: 14,
-                  lineHeight: 1.4,
-                  whiteSpace: 'pre-wrap',
-                  overflow: 'auto',
-                  userSelect: 'none',
-                }}
-              >
-                {supportQuestion}
-              </div>
+              <CardLinkifiedText
+                text={isOwner ? draftSupport : supportQuestion}
+                style={{ flex: 1, overflow: 'auto', userSelect: isOwner ? 'text' : 'none' }}
+                editable={isOwner}
+                onEditRequest={isOwner ? () => beginEditing('support') : undefined}
+              />
             </div>
           </>
         )}
-        <div
-          aria-hidden
-          onPointerDown={blockForeignInteraction}
-          onDoubleClick={blockForeignInteraction}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            cursor: 'default',
-            pointerEvents: 'auto',
-          }}
-        />
       </>
     )
   }

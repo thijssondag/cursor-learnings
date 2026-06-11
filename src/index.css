@@ -109,6 +109,24 @@ button {
   opacity: 1;
 }
 
+/* Clickable URLs inside note cards */
+.card-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+  text-underline-offset: 2px;
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    color 150ms ease,
+    text-decoration-color 150ms ease;
+}
+
+.card-link:hover {
+  color: var(--color-accent);
+  text-decoration-color: var(--color-accent);
+}
+
 /* Heart like micro-interaction */
 @keyframes heart-pop {
   0% {
